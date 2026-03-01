@@ -7,7 +7,7 @@ type = "async"
 default-concurrency = 5
 
 [llm.endpoints.openai]
-max_concurrency = 10
+max_concurrency = 100
 
 [llm.profiles.light]
 model = "gpt-5-nano"
