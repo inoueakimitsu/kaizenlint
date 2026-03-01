@@ -1,10 +1,9 @@
 import openai
 
 from kaizenlint.models import (
+    CheckTask,
+    CheckerConfig,
     KaizenlintConfig,
-    LintRule,
-    LintSource,
-    LintSourceName,
     LintViolation,
     LintViolationMessage,
     LlmCheckerConfig,
@@ -12,23 +11,42 @@ from kaizenlint.models import (
 )
 
 
-def _check_one_rule(
-    source: LintSource,
-    source_name: LintSourceName,
-    rule: LintRule,
+def resource_key(checker: CheckerConfig, config: KaizenlintConfig) -> str:
+    """同じリソースを共有するタスクのグルーピングキーを返す。"""
+    if isinstance(checker, LlmCheckerConfig):
+        profile = config.llm.profiles[checker.profile]
+        return f"llm:{profile.endpoint}"
+    return f"checker:{checker.type}"
+
+
+def max_concurrency(checker: CheckerConfig, config: KaizenlintConfig) -> int:
+    """リソースキーごとの同時実行上限を返す。"""
+    if isinstance(checker, LlmCheckerConfig):
+        profile = config.llm.profiles[checker.profile]
+        endpoint = config.llm.endpoints.get(profile.endpoint)
+        if endpoint:
+            return endpoint.max_concurrency
+    return config.executor.default_concurrency
+
+
+async def check_one(
+    task: CheckTask,
     config: KaizenlintConfig,
 ) -> LintViolation | None:
-    if not isinstance(rule.checker, LlmCheckerConfig):
+    """1つのタスク（ソース×ルール）をチェックする。"""
+    if not isinstance(task.rule.checker, LlmCheckerConfig):
         return None
 
-    profile = config.llm.profiles[rule.checker.profile]
-    client = openai.OpenAI(base_url=profile.base_url)
+    profile = config.llm.profiles[task.rule.checker.profile]
+    endpoint = config.llm.endpoints.get(profile.endpoint)
+    base_url = endpoint.base_url if endpoint else None
+    client = openai.AsyncOpenAI(base_url=base_url)
 
     extra_kwargs: dict[str, object] = {}
     if profile.temperature is not None:
         extra_kwargs["temperature"] = profile.temperature
 
-    completion = client.chat.completions.parse(
+    completion = await client.chat.completions.parse(
         model=profile.model,
         messages=[
             {
@@ -41,9 +59,9 @@ def _check_one_rule(
             {
                 "role": "user",
                 "content": (
-                    f"ファイル名: {source_name.name or '(unknown)'}\n\n"
-                    f"## ルール: {rule.title}\n{rule.description}\n\n"
-                    f"## 対象テキスト\n```\n{source.content}\n```"
+                    f"ファイル名: {task.source_name.name or '(unknown)'}\n\n"
+                    f"## ルール: {task.rule.title}\n{task.rule.description}\n\n"
+                    f"## 対象テキスト\n```\n{task.source.content}\n```"
                 ),
             },
         ],
@@ -56,21 +74,7 @@ def _check_one_rule(
         return None
     if judgement.violated:
         return LintViolation(
-            rule=rule,
+            rule=task.rule,
             message=LintViolationMessage(text=judgement.message),
         )
     return None
-
-
-def check(
-    source: LintSource,
-    source_name: LintSourceName,
-    rules: list[LintRule],
-    config: KaizenlintConfig,
-) -> list[LintViolation]:
-    violations: list[LintViolation] = []
-    for rule in rules:
-        result = _check_one_rule(source, source_name, rule, config)
-        if result is not None:
-            violations.append(result)
-    return violations

@@ -2,8 +2,17 @@ include = ["*.py", "*.md", "*.txt"]
 exclude = [".git", ".venv", "__pycache__", "node_modules", ".kaizenlint"]
 rules = ["rules/**/*.md"]
 
+[executor]
+type = "async"
+default-concurrency = 5
+
+[llm.endpoints.openai]
+max_concurrency = 10
+
 [llm.profiles.light]
 model = "gpt-5-nano"
+endpoint = "openai"
 
 [llm.profiles.heavy]
 model = "gpt-5-mini"
+endpoint = "openai"

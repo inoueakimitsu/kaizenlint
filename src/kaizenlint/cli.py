@@ -5,10 +5,10 @@ from typing import Annotated, Optional
 
 import typer
 
-from kaizenlint.checker import check
 from kaizenlint.config import discover_config, load_config
+from kaizenlint.executor import AsyncExecutor
 from kaizenlint.files import resolve_files
-from kaizenlint.models import LintSource, LintSourceName
+from kaizenlint.models import CheckTask, LintSource, LintSourceName
 from kaizenlint.rules import resolve_rules
 
 app = typer.Typer(add_completion=False)
@@ -85,16 +85,27 @@ def check_cmd(
 
     typer.echo(f"Checking {len(resolved)} file(s) with {len(rules)} rule(s)...")
 
-    # 5. ファイルごとに check() を呼ぶ
-    has_violations = False
+    # 5. タスクリスト構築
+    tasks: list[CheckTask] = []
     for filepath in resolved:
         source = LintSource(content=filepath.read_text())
-        source_name = LintSourceName(name=str(filepath.name))
-        violations = check(source, source_name, rules, config)
-        for v in violations:
-            has_violations = True
-            typer.echo(f"{filepath}:  [{v.rule.title}] {v.message.text}")
+        source_name = LintSourceName(name=str(filepath))
+        for rule in rules:
+            tasks.append(CheckTask(source=source, source_name=source_name, rule=rule))
 
-    # 6. exit code
+    # 6. Executor で実行
+    executor = AsyncExecutor()
+    results = executor.execute(tasks, config)
+
+    # 7. 結果出力
+    has_violations = False
+    for task, violation in results:
+        if violation is not None:
+            has_violations = True
+            typer.echo(
+                f"{task.source_name.name}:  [{violation.rule.title}] {violation.message.text}"
+            )
+
+    # 8. exit code
     if has_violations:
         raise typer.Exit(1)

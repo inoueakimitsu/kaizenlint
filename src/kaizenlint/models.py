@@ -41,24 +41,44 @@ class LintViolation(BaseModel):
     message: LintViolationMessage
 
 
+class CheckTask(BaseModel):
+    source: LintSource
+    source_name: LintSourceName
+    rule: LintRule
+
+
 class _LlmJudgement(BaseModel):
     violated: bool
     message: str
 
 
+class LlmEndpoint(BaseModel):
+    base_url: str | None = None
+    max_concurrency: int = 5
+
+
 class LlmProfile(BaseModel):
     model: str
     temperature: float | None = None
-    base_url: str | None = None
+    endpoint: str = "default"
 
 
 class LlmConfig(BaseModel):
+    endpoints: dict[str, LlmEndpoint] = Field(default_factory=dict)
     profiles: dict[str, LlmProfile]
+
+
+class ExecutorConfig(BaseModel):
+    model_config = {"populate_by_name": True}
+
+    type: str = "async"
+    default_concurrency: int = Field(default=5, alias="default-concurrency")
 
 
 class KaizenlintConfig(BaseModel):
     model_config = {"populate_by_name": True}
 
+    executor: ExecutorConfig = Field(default_factory=ExecutorConfig)
     llm: LlmConfig
     include: list[str] = Field(default_factory=lambda: ["*.py", "*.md", "*.txt"])
     exclude: list[str] = Field(
