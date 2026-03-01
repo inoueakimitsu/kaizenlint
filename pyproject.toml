@@ -1,0 +1,45 @@
+[project]
+name = "kaizenlint"
+version = "0.1.0"
+description = "LLM-powered customizable linter"
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{name = "Akimitsu Inoue", email = "akimitsu.inoue@gmail.com"}]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+    "markdown-it-py>=4.0.0",
+    "openai>=2.24.0",
+    "pathspec>=0.12.0",
+    "pydantic>=2.12.5",
+    "python-frontmatter>=1.1.0",
+    "typer>=0.15.0",
+]
+
+[project.scripts]
+kaizenlint = "kaizenlint.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/inoueakimitsu/kaizenlint"
+Repository = "https://github.com/inoueakimitsu/kaizenlint"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/kaizenlint"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "ruff>=0.15.4",
+    "ty>=0.0.19",
+]

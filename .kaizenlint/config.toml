@@ -1,0 +1,9 @@
+include = ["*.py", "*.md", "*.txt"]
+exclude = [".git", ".venv", "__pycache__", "node_modules", ".kaizenlint"]
+rules = ["rules/**/*.md"]
+
+[llm.profiles.light]
+model = "gpt-5-nano"
+
+[llm.profiles.heavy]
+model = "gpt-5-mini"
