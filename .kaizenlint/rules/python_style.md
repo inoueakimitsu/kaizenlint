@@ -195,7 +195,7 @@ import my_module
 ## No Print Statements
 
 Use the `logging` module instead of `print()` for any output.
-`print()` is acceptable only in CLI entry points or scripts explicitly designed for console output.
+`print()` is acceptable only in CLI entry points or scripts explicitly designed for console output. 具体的には、`if __name__ == "__main__"` ブロック内、または `argparse` を使用するスクリプトのエントリ ポイント関数 (例: `main()`) 内での `print()` は許容されます。
 
 **Bad:**
 ```python

@@ -31,35 +31,6 @@ void TestFilteringAndSorting_RemovesNegativeScores(){
 }
 ```
 
-## テスト専用のミニ言語を実装する
-
-テストで繰り返される複雑な設定を文字列形式で簡潔に表現できるようにすることで、テストコードの可読性と保守性を向上させます。
-
-**Bad:**
-```cpp
-void Test1() {
-    vector<ScoredDocument> docs;
-    AddScoredDoc(docs, -5.0);
-    AddScoredDoc(docs, 1);
-    AddScoredDoc(docs, 4);
-    SortAndFilterDocs(&docs);
-    assert(docs[0].score == 4);
-    assert(docs[1].score == 3.0);
-}
-```
-
-**Good:**
-```cpp
-void CheckScoresBeforeAfter(string input, string expected_output) {
-    vector<ScoredDocument> docs = ScoredDocsFromString(input);
-    SortAndFilterDocs(&docs);
-    string output = ScoredDocsToString(docs);
-    assert(output == expected_output);
-}
-
-CheckScoresBeforeAfter("-5, 1, 4, -99998.7, 3", "4, 3, 1");
-```
-
 ## エラー メッセージは詳細で役に立つものにする
 
 テスト失敗時のエラー メッセージは、実際の値と期待値、入力値など、デバッグに必要な情報をすべて含めます。高度なアサート機能 (BOOST_REQUIRE_EQUAL など) を使用します。
@@ -79,25 +50,6 @@ if (output != expected_output) {
     cerr << "Actual Output: \"" << output << "\"" << endl;
     abort();
 }
-```
-
-## 適切なテスト入力値を選択する
-
-テストは単純でありながら、コードを完全にテストできる入力値を選択します。エッジ ケース (空の入力、境界値、重複など) も含めます。
-
-**Bad:**
-```cpp
-// 複雑で意味不明な値を使用
-CheckScoresBeforeAfter("-99998.7, -5.0, 1, 3, 4", "4, 3, 1");
-```
-
-**Good:**
-```cpp
-// シンプルかつ完全なテストケース
-CheckScoresBeforeAfter("-5, 1, 4", "4, 1");
-void TestFiltering_EmptyVector() { ... }
-void TestFiltering_WithZeroScore() { ... }
-void TestSorting_DuplicateScores() { ... }
 ```
 
 ## テストケースは複数の小さなテストに分ける
@@ -156,7 +108,7 @@ class Counter {
 
 ## テスタビリティのために外部から時刻を注入する
 
-クラス内で時刻を取得するのではなく、外部からパラメーターとして受け取ることで、テストしやすくバグが少なくなります。時刻の呼び出しは 1 箇所に集約します。
+クラス内で時刻を取得するのではなく、外部からパラメーターとして受け取ることで、テストしやすくバグが少なくなります。時刻の呼び出しは 1 箇所に集約します。`time.sleep()` などの待機処理はこのルールの対象外です。このルールは `time.time()`、`datetime.now()` のような時刻取得の呼び出しに適用してください。
 
 **Bad:**
 ```cpp

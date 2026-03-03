@@ -29,7 +29,7 @@ while (bytes_received < bytes_expected) {
 
 ## 否定形より肯定形の条件を使う
 
-if/else ブロックの条件は、否定形 (if (!condition)) より肯定形 (if (condition)) を使います。
+if/else ブロックの条件は、否定形 (if (!condition)) より肯定形 (if (condition)) を使います。ガード節 (早期リターンや continue で else を持たない if 文) では否定条件の使用を許容してください。このルールは if/else の両方のブロックがある場合にのみ適用してください。
 
 **Bad:**
 ```python
