@@ -1,3 +1,5 @@
+"""kaizenlint の CLI エントリー ポイントを提供します。"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -8,7 +10,7 @@ import typer
 from kaizenlint.config import discover_config, load_config
 from kaizenlint.executor import AsyncExecutor
 from kaizenlint.files import resolve_files
-from kaizenlint.models import CheckTask, LintSource, LintSourceName
+from kaizenlint.models import CheckTask, LintSource, LintSourceName, LintViolation
 from kaizenlint.rules import resolve_rules
 
 app = typer.Typer(add_completion=False)
@@ -16,6 +18,7 @@ app = typer.Typer(add_completion=False)
 
 @app.callback(invoke_without_command=True)
 def _callback(ctx: typer.Context) -> None:
+    """サブコマンド未指定時にヘルプを表示します。"""
     if ctx.invoked_subcommand is None:
         typer.echo(ctx.get_help())
         raise typer.Exit(0)
@@ -25,31 +28,51 @@ def _callback(ctx: typer.Context) -> None:
 def check_cmd(
     files: Annotated[
         Optional[list[Path]],
-        typer.Argument(help="対象ファイル/ディレクトリ。省略時 ."),
+        typer.Argument(help="対象ファイル / ディレクトリーです。省略時はカレント ディレクトリーを使います。"),
     ] = None,
     exclude: Annotated[
         Optional[list[str]],
-        typer.Option("--exclude", help="config の exclude を上書き"),
+        typer.Option("--exclude", help="config の exclude を上書きします。"),
     ] = None,
     extend_exclude: Annotated[
         Optional[list[str]],
-        typer.Option("--extend-exclude", help="config の exclude に追加"),
+        typer.Option("--extend-exclude", help="config の exclude に追加します。"),
     ] = None,
     force_exclude: Annotated[
         Optional[bool],
-        typer.Option(help="明示ファイルにも exclude 適用"),
+        typer.Option(help="明示ファイルにも exclude を適用します。"),
     ] = None,
     respect_gitignore: Annotated[
         Optional[bool],
-        typer.Option(help=".gitignore を尊重"),
+        typer.Option(help=".gitignore を尊重します。"),
     ] = None,
     config_path: Annotated[
         Optional[Path],
-        typer.Option("--config", help="config ファイルパス指定"),
+        typer.Option("--config", help="config ファイル パスを指定します。"),
     ] = None,
 ) -> None:
-    """kaizenlint でファイルをチェックする。"""
-    # 1. config ロード
+    """kaizenlint でファイルをチェックします。
+
+    Parameters
+    ----------
+    files: Optional[list[Path]]
+        対象ファイル / ディレクトリーです。省略時はカレント ディレクトリーを使います。
+    exclude: Optional[list[str]]
+        config の exclude を上書きします。
+    extend_exclude: Optional[list[str]]
+        config の exclude に追加します。
+    force_exclude: Optional[bool]
+        明示ファイルにも exclude を適用します。
+    respect_gitignore: Optional[bool]
+        .gitignore を尊重するかを指定します。
+    config_path: Optional[Path]
+        config ファイル パスを指定します。
+
+    Raises
+    ------
+    typer.Exit
+        違反があれば exit code 1 で終了します。
+    """
     if config_path is not None:
         config_file = config_path.resolve()
         config = load_config(config_file)
@@ -58,7 +81,6 @@ def check_cmd(
 
     config_dir = config_file.parent
 
-    # 2. CLI オプションで config をオーバーライド
     if exclude is not None:
         config.exclude = exclude
     if extend_exclude is not None:
@@ -68,7 +90,6 @@ def check_cmd(
     if respect_gitignore is not None:
         config.respect_gitignore = respect_gitignore
 
-    # 3. 対象ファイル解決
     target_paths = files if files else [Path(".")]
     resolved = resolve_files(target_paths, config, config_dir)
 
@@ -76,7 +97,6 @@ def check_cmd(
         typer.echo("No files to check.")
         raise typer.Exit(0)
 
-    # 4. ルール解決
     rules = resolve_rules(config, config_dir)
 
     if not rules:
@@ -85,7 +105,6 @@ def check_cmd(
 
     typer.echo(f"Checking {len(resolved)} file(s) with {len(rules)} rule(s)...")
 
-    # 5. タスクリスト構築
     tasks: list[CheckTask] = []
     for filepath in resolved:
         source = LintSource(content=filepath.read_text())
@@ -93,19 +112,19 @@ def check_cmd(
         for rule in rules:
             tasks.append(CheckTask(source=source, source_name=source_name, rule=rule))
 
-    # 6. Executor で実行
     executor = AsyncExecutor()
-    results = executor.execute(tasks, config)
-
-    # 7. 結果出力
     has_violations = False
-    for task, violation in results:
+
+    def on_result(task: CheckTask, violation: LintViolation | None) -> None:
+        """チェック結果を受け取り、違反があれば出力します。"""
+        nonlocal has_violations
         if violation is not None:
             has_violations = True
             typer.echo(
                 f"{task.source_name.name}:  [{violation.rule.title}] {violation.message.text}"
             )
 
-    # 8. exit code
+    executor.execute(tasks, config, on_result)
+
     if has_violations:
         raise typer.Exit(1)
