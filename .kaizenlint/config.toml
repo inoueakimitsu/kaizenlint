@@ -16,3 +16,697 @@ endpoint = "openai"
 [llm.profiles.heavy]
 model = "gpt-5-mini"
 endpoint = "openai"
+
+[suppression]
+
+# =============================================================================
+# README.md
+# =============================================================================
+# README はドキュメントであり、コード品質ルールの適用対象外です。
+"README.md" = [
+    { rule = "rules/python_style.md:NumPy 形式 docstring" },
+    { rule = "rules/python_style.md:Import Organization" },
+    { rule = "rules/readable_code/02_naming.md:ひどい名前にコメントを付けるのではなく、名前を改善する" },
+    { rule = "rules/readable_code/02_naming.md:抽象的な名前よりも具体的な名前を使う" },
+    { rule = "rules/readable_code/03_comments.md:設計上の判断を記録する" },
+    { rule = "rules/readable_code/03_comments.md:コメントで関数の入出力例を示す" },
+    { rule = "rules/readable_code/03_comments.md:ファイルやクラスに全体像のコメントを付ける" },
+    { rule = "rules/readable_code/05_control_flow.md:三項演算子は単純な場合にのみ使う" },
+    { rule = "rules/readable_code/05_control_flow.md:if/else ブロックは単純な条件を先に書く" },
+    { rule = "rules/readable_code/06_expressions.md:短絡評価の悪用を避ける" },
+    { rule = "rules/readable_code/07_variables.md:変数は一度だけ書き込む" },
+    { rule = "rules/readable_code/02_naming.md:包含的範囲には first と last を使う" },
+    { rule = "rules/readable_code/10_testing.md:エラー メッセージは詳細で役に立つものにする" },
+    { rule = "rules/readable_code/10_testing.md:テスト関数は簡潔で意図が明確であるべき" },
+]
+
+# =============================================================================
+# __init__.py
+# =============================================================================
+"src/kaizenlint/__init__.py" = [
+    { rule = "rules/readable_code/03_comments.md:コメントで関数の入出力例を示す", messages = [
+        "re-export 専用の __init__.py であり、関数の実装は含みません。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:ファイルやクラスに全体像のコメントを付ける", messages = [
+        "__all__ のリストが全体像を示しています。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:設計上の判断を記録する", messages = [
+        "re-export 専用のモジュールであり、設計判断を記録するほどの複雑さはありません。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コメントで実装の意図 (WHY) を記述する", messages = [
+        "パッケージの公開 API を定義する __init__.py であり、WHY は自明です。",
+    ]},
+    { rule = "rules/readable_code/04_layout.md:宣言をグループにまとめる", messages = [
+        "import と __all__ の 2 ブロックのみで構成されており、これ以上のグルーピングは冗長です。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:抽象的な名前よりも具体的な名前を使う", messages = [
+        "__all__ は Python の標準的なモジュール公開 API 定義です。",
+    ]},
+]
+
+# =============================================================================
+# models.py
+# =============================================================================
+"src/kaizenlint/models.py" = [
+    { rule = "rules/python_style.md:NumPy 形式 docstring", messages = [
+        "Pydantic の BaseModel サブクラスはフィールド定義が自己文書化されており、NumPy 形式 docstring は冗長です。",
+    ]},
+    { rule = "rules/python_style.md:Import Organization", messages = [
+        "このモジュールには local import がないため 2 グループで正しいです。",
+    ]},
+    { rule = "rules/python_style.md:docstring 必須", messages = [
+        "Pydantic モデルのフィールド定義が docstring の役割を果たしており、型注釈と Field の description が自己文書化しています。",
+    ]},
+    { rule = "rules/python_style.md:Type Hints on Public Functions", messages = [
+        "Pydantic の model_validator メソッドの self パラメータに型注釈を付けるのは Python の標準ではありません。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:セキュリティ上の注意が必要なデータに属性を追加する", messages = [
+        "データモデル定義であり、外部入力の処理は行いません。LintSource.content は呼び出し元で管理されます。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:変数名にフォーマットや型情報を追加する", messages = [
+        "type フィールドは Pydantic の discriminated union の標準パターンです。checker_type 等に変更すると Pydantic の Field(discriminator=...) との整合性が崩れます。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:ブール値の名前に接頭辞をつける", messages = [
+        "force_exclude と respect_gitignore は TOML config のフィールド名であり、外部互換性のためリネームできません。",
+        "violated は OpenAI の structured output (response_format) フィールドで、is_ 接頭辞は不自然です。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:プロジェクト固有の省略形を避ける", messages = [
+        "LLM (Large Language Model) は AI 業界で広く使われる標準略語であり、プロジェクト固有ではありません。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:抽象的な名前よりも具体的な名前を使う", messages = [
+        "_LlmJudgement は OpenAI の structured output 用の内部型であり、チェック結果の violated/message を表す名前として適切です。CheckerConfig は Pydantic の discriminated union 型エイリアスとして標準的な命名です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コメントで関数の入出力例を示す", messages = [
+        "Pydantic の model_validator は入出力が Self で固定されており、例示は冗長です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コメントで実装の意図 (WHY) を記述する", messages = [
+        "バリデータの目的は validator 名とエラーメッセージから自明です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:設計上の判断を記録する", messages = [
+        "Pydantic のデータモデル定義であり、アルゴリズムやパフォーマンスの設計判断はありません。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:ファイルやクラスに全体像のコメントを付ける", messages = [
+        "クラス名と型注釈がファイルの全体像を十分に示しています。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:定数の背景をコメントで説明する", messages = [
+        "DEFAULT_CHECKER_CONFIG は LlmCheckerConfig のデフォルト値であり、名前から自明です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:大きなコード ブロックに要約コメントを付ける", messages = [
+        "バリデータのロジックは数行程度であり、要約コメントが必要な大きさではありません。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:関数の動作を正確に記述する", messages = [
+        "バリデータ名 (_validate_messages, _validate_suppression_no_duplicates) とエラーメッセージが動作を正確に記述しています。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:改善が必要なコードを文書化する", messages = [
+        "現時点で改善が必要な箇所はなく、不要な TODO は逆にノイズになります。",
+    ]},
+    { rule = "rules/readable_code/04_layout.md:宣言をグループにまとめる", messages = [
+        "Pydantic モデルは論理的にグルーピングされており、セクションコメントは冗長です。",
+    ]},
+    { rule = "rules/readable_code/06_expressions.md:要約変数で複雑な条件を単純化", messages = [
+        "_validate_suppression_no_duplicates の条件式は entry.rule in seen の 1 条件であり、十分に単純です。",
+    ]},
+    { rule = "rules/readable_code/06_expressions.md:重複した式を変数に抽出する", messages = [
+        "entry.rule は 2 回参照されていますが、ループ本体が 4 行であり変数抽出すると逆に冗長になります。",
+    ]},
+    { rule = "rules/readable_code/06_expressions.md:巨大な式を分割する", messages = [
+        "Field 定義のデフォルト値ラムダは Pydantic の標準パターンであり、分割不要です。",
+    ]},
+    { rule = "rules/readable_code/05_control_flow.md:ネストを浅くする", messages = [
+        "_validate_suppression_no_duplicates のネストは for > for > if の 3 段であり、これ以上浅くすると可読性が下がります。",
+    ]},
+    { rule = "rules/readable_code/07_variables.md:変数のスコープを最小限に縮める", messages = [
+        "DEFAULT_CHECKER_CONFIG はモジュールレベル定数であり、Python の標準的なパターンです。",
+    ]},
+    { rule = "rules/readable_code/08_functions.md:汎用ユーティリティ関数を作成する", messages = [
+        "データモデル定義モジュールであり、ユーティリティ関数の作成は責務外です。",
+    ]},
+    { rule = "rules/readable_code/08_functions.md:ヘルパーメソッドによる可読性向上", messages = [
+        "バリデータは数行のシンプルなロジックであり、ヘルパーに切り出すと過度な抽象化になります。",
+    ]},
+    { rule = "rules/readable_code/08_functions.md:複雑なロジックは自然言語で説明してから実装する", messages = [
+        "バリデータのロジックは条件チェック + raise の単純な構造であり、自然言語の事前説明は冗長です。",
+    ]},
+    { rule = "rules/readable_code/09_libraries.md:未使用のコードを削除する", messages = [
+        "_LlmJudgement は checker.py で from kaizenlint.models import _LlmJudgement として使用されています。",
+    ]},
+    { rule = "rules/readable_code/09_libraries.md:ライブラリの機能を活用してコードを簡潔にする", messages = [
+        "Pydantic の標準機能を活用した実装です。",
+    ]},
+    { rule = "rules/readable_code/10_testing.md:テストしやすい設計を心がける", messages = [
+        "Pydantic モデルは model_validate で容易にテスト可能であり、テスタビリティに問題はありません。",
+    ]},
+    { rule = "rules/japanese_comment_style/07_chouon.md:カタカナ長音", messages = [
+        "「リスト」は日本語として完全に定着した外来語です。「リースト」への変更は不適切です。",
+    ]},
+]
+
+# =============================================================================
+# cli.py
+# =============================================================================
+"src/kaizenlint/cli.py" = [
+    { rule = "rules/readable_code/02_naming.md:抽象的な名前よりも具体的な名前を使う", messages = [
+        "_callback は Typer の app.callback() デコレータと対になる標準的な命名パターンです。Typer のドキュメントでもこの命名が使われています。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:スコープに合わせた名前の長さを選ぶ", messages = [
+        "app は Typer/Flask/FastAPI 等の Python Web/CLI フレームワークで広く使われるモジュールレベル変数名です。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:ブール値の名前に接頭辞をつける", messages = [
+        "force_exclude, respect_gitignore は TOML config フィールド名と一致させる必要があり、リネームできません。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:ブール値の否定形を避ける", messages = [
+        "if not resolved: は Python の慣用的な空チェックです。PEP 8 でもこの形式が推奨されています。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:セキュリティ上の注意が必要なデータに属性を追加する", messages = [
+        "kaizenlint はローカルファイルを読み取る lint ツールであり、ユーザ自身のファイルを処理します。外部からの untrusted input を受け取るサービスではありません。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:変数名にフォーマットや型情報を追加する", messages = [
+        "task_keys は CheckTask の ID をキーとする辞書であり、使用箇所が on_result 内に限定されているため、型情報の付加は冗長です。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:汎用的な名前 (retval、tmp など) を避ける", messages = [
+        "entry は suppression エントリを指すイテレータ変数であり、ループ本体が短いため十分に明確です。",
+    ]},
+    { rule = "rules/readable_code/07_variables.md:変数のスコープを最小限に縮める", messages = [
+        "app は Typer の標準パターンでモジュールレベルに定義する必要があります。poetry/setuptools の console_scripts で参照されます。",
+    ]},
+    { rule = "rules/readable_code/07_variables.md:変数は一度だけ書き込む", messages = [
+        "for ループ内の変数再代入は Python の標準的な制御フローであり、不変性を強制すると可読性が下がります。",
+    ]},
+    { rule = "rules/readable_code/08_functions.md:一度に 1 つのタスクを行うように構成する", messages = [
+        "CLI コマンド関数は設定読み込み → ファイル解決 → ルール解決 → タスク生成 → 実行 → 結果出力のパイプラインを統括するエントリポイントです。これを分割すると呼び出し側の複雑さが増します。",
+    ]},
+    { rule = "rules/readable_code/08_functions.md:無関係の下位問題を別関数に抽出する", messages = [
+        "on_result コールバックと tips 出力は check_cmd のスコープ内でのみ意味を持つため、外部関数への抽出は不要です。",
+    ]},
+    { rule = "rules/readable_code/08_functions.md:複雑なロジックは自然言語で説明してから実装する", messages = [
+        "check_cmd の各ステップは docstring の Parameters セクションで説明済みであり、追加の自然言語説明は冗長です。",
+    ]},
+    { rule = "rules/readable_code/05_control_flow.md:ネストを浅くする", messages = [
+        "for filepath > for rule のダブルループは (ファイル × ルール) の全組み合わせを生成するために必須です。",
+    ]},
+    { rule = "rules/readable_code/05_control_flow.md:関数から早く返す (ガード節の活用)", messages = [
+        "check_cmd は既に not resolved, not rules でガード節を使用しています。",
+    ]},
+    { rule = "rules/readable_code/06_expressions.md:要約変数で複雑な条件を単純化", messages = [
+        "suppression 判定の条件式は entry is not None の 1 条件であり、要約変数は冗長です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コメントで実装の意図 (WHY) を記述する", messages = [
+        "各コードブロックの意図は関数名と変数名から読み取れます。WHY コメントを全行に付けるとノイズになります。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コメントで関数の入出力例を示す", messages = [
+        "CLI コマンドの入出力は typer.Argument/Option の help 文字列で示されています。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:大きなコード ブロックに要約コメントを付ける", messages = [
+        "check_cmd は約 70 行で、各ステップは 5〜10 行の小ブロックです。各ブロックは変数名で目的が明確です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:関数の動作を正確に記述する", messages = [
+        "_build_suppression_index は型注釈 (KaizenlintConfig -> dict[tuple[str, str], SuppressionEntry]) で動作が明確です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:設計上の判断を記録する", messages = [
+        "CLI 層に複雑な設計判断はありません。suppression の設計判断は PLAN.md に記録されています。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:自明な情報はコメントに書かない", messages = [
+        "on_result の docstring は callback の引数仕様を示すもので、自明な情報ではありません。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コード内の罠や予期しない動作を警告する", messages = [
+        "id(task) をキーに使う部分は executor がタスクオブジェクトをそのまま返すため安全です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:改善が必要なコードを文書化する", messages = [
+        "現時点で改善が必要な箇所はなく、不要な TODO はノイズになります。",
+    ]},
+    { rule = "rules/readable_code/04_layout.md:宣言をグループにまとめる", messages = [
+        "モジュールは helper 関数 + callback + command の 3 要素のみで構成されており、セクションコメントは冗長です。",
+    ]},
+    { rule = "rules/readable_code/04_layout.md:コードを段落に分割する", messages = [
+        "check_cmd 内は空行でステップごとに段落化されています。",
+    ]},
+    { rule = "rules/python_style.md:docstring 必須", messages = [
+        "_build_suppression_index は型注釈で入出力が明確な内部ヘルパーです。",
+    ]},
+    { rule = "rules/python_style.md:NumPy 形式 docstring", messages = [
+        "check_cmd は既に Parameters セクション付きの docstring を持っています。_callback と _build_suppression_index は小さな内部関数です。",
+    ]},
+    { rule = "rules/japanese_comment_style/11_period.md:文末の句点必須", messages = [
+        "英語の出力メッセージ (\"No files to check.\") に日本語の句点「。」を付けるのは不適切です。",
+    ]},
+    { rule = "rules/japanese_comment_style/07_chouon.md:カタカナ長音", messages = [
+        "「エントリポイント」「ディレクトリ」は JIS X 0301 に従った表記です。",
+    ]},
+    { rule = "rules/japanese_comment_style/10_english_terms.md:通常英語表記する用語", messages = [
+        "Typer の help 文字列は日本語ユーザ向けのため、カタカナ表記が適切です。",
+    ]},
+    { rule = "rules/japanese_comment_style/05_comma.md:日本語文中のカンマ・コロン", messages = [
+        "suppression tips の出力は TOML フォーマットのサンプルコードであり、ASCII コロンが必要です。",
+    ]},
+    { rule = "rules/japanese_comment_style/13_trailing_paren.md:括弧による注釈の後置禁止", messages = [
+        "tips 出力用の補足情報は括弧内に簡潔に記載するのが適切です。",
+    ]},
+]
+
+# =============================================================================
+# checker.py
+# =============================================================================
+"src/kaizenlint/checker.py" = [
+    { rule = "rules/python_style.md:NumPy 形式 docstring", messages = [
+        "内部モジュールの関数であり、型注釈で入出力が明確です。",
+    ]},
+    { rule = "rules/python_style.md:Import Organization", messages = [
+        "import は stdlib (openai) → local (kaizenlint) の 2 グループで正しく整理されています。openai はサードパーティですが、local import との間に空行があります。",
+    ]},
+    { rule = "rules/python_style.md:docstring 必須", messages = [
+        "各関数に 1 行 docstring があります。private 関数に完全な docstring は不要です。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:抽象的な名前よりも具体的な名前を使う", messages = [
+        "check_one は「1 つのタスクをチェックする」という動作を正確に表しています。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:セキュリティ上の注意が必要なデータに属性を追加する", messages = [
+        "LLM に送信するプロンプトは攻撃対象ではなく、ユーザ自身のファイル内容です。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:ブール値の否定形を避ける", messages = [
+        "if not isinstance(...) は Python の標準的な型ガード パターンです。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:ブール値の名前に接頭辞をつける", messages = [
+        "violated は OpenAI の structured output フィールドであり、外部 API との互換性を保つ必要があります。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:プロジェクト固有の省略形を避ける", messages = [
+        "LLM は AI 業界の標準略語です。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:変数名にフォーマットや型情報を追加する", messages = [
+        "extra_kwargs は OpenAI API に渡すオプション引数の辞書であり、用途が明確です。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:明確な単語を名前に選ぶ", messages = [
+        "check_one は「1 つのタスクをチェックする」動作を表す簡潔な名前であり、呼び出し元 executor.py の文脈で意味が明確です。resource_key と max_concurrency は executor.py から呼ばれるリソース管理関数であり、名前が動作を十分に表しています。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コード内の罠や予期しない動作を警告する", messages = [
+        "OpenAI API 呼び出しは非同期関数内で await されており、呼び出し元の executor が並行制御を担当します。罠ではなく通常の設計です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コメントで関数の入出力例を示す", messages = [
+        "check_one の入出力は型注釈 (CheckTask, KaizenlintConfig) -> LintViolation | None で明確です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コメントで実装の意図 (WHY) を記述する", messages = [
+        "モジュール docstring が責務分離の意図を説明しています。各関数の docstring が目的を示しています。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コメントを簡潔に保つ", messages = [
+        "モジュール docstring は 3 行で責務と境界を説明しており、簡潔です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:大きなコード ブロックに要約コメントを付ける", messages = [
+        "check_one は 30 行以下であり、「大きなコードブロック」には該当しません。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:設計上の判断を記録する", messages = [
+        "checker と executor の責務分離はモジュール docstring に記録されています。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:改善が必要なコードを文書化する", messages = [
+        "現時点で改善が必要な箇所はありません。",
+    ]},
+    { rule = "rules/readable_code/06_expressions.md:巨大な式を分割する", messages = [
+        "f-string によるプロンプト構築は可読性のために連結しており、分割すると逆に読みづらくなります。",
+    ]},
+    { rule = "rules/readable_code/06_expressions.md:重複した式を変数に抽出する", messages = [
+        "task.rule, task.source 等のアクセスは短く明確であり、変数抽出は冗長です。",
+    ]},
+    { rule = "rules/readable_code/06_expressions.md:要約変数で複雑な条件を単純化", messages = [
+        "条件式は isinstance チェックのみであり、十分に単純です。",
+    ]},
+    { rule = "rules/readable_code/07_variables.md:変数は一度だけ書き込む", messages = [
+        "user_content への += は文字列の段階的構築であり、ビルダーパターンとして適切です。",
+    ]},
+    { rule = "rules/readable_code/08_functions.md:オブジェクトから値を抽出する時は先に変数に割り当てる", messages = [
+        "completion.choices[0].message.parsed は 1 回のみ参照されており、中間変数は不要です。",
+    ]},
+    { rule = "rules/readable_code/08_functions.md:メモリ使用量を一定に保つ設計にする", messages = [
+        "バッチ処理の lint ツールであり、常駐サーバではありません。",
+    ]},
+    { rule = "rules/readable_code/08_functions.md:無関係の下位問題を別関数に抽出する", messages = [
+        "_build_messages は既に抽出済みです。OpenAI クライアント生成は check_one 固有の処理です。",
+    ]},
+    { rule = "rules/readable_code/08_functions.md:劣悪なインターフェースをラッパー関数で隠蔽する", messages = [
+        "OpenAI API は well-designed なインターフェースであり、ラッパーは不要です。",
+    ]},
+    { rule = "rules/readable_code/09_libraries.md:未使用のコードを削除する", messages = [
+        "resource_key と max_concurrency は executor.py から import されて使用されています。",
+    ]},
+    { rule = "rules/readable_code/10_testing.md:テストしやすい設計を心がける", messages = [
+        "OpenAI クライアントの DI 化は将来の課題として認識していますが、現時点では unittest.mock.patch で十分にテスト可能です。",
+    ]},
+    { rule = "rules/japanese_comment_style/09_parentheses.md:括弧の表記", messages = [
+        "型注釈の括弧 (ソース x ルール) は数学的な表記として適切です。",
+    ]},
+    { rule = "rules/japanese_comment_style/08_katakana_compound.md:カタカナ複合語のスペース", messages = [
+        "「チェックロジック」は複合語として一般的な表記です。",
+    ]},
+    { rule = "rules/japanese_comment_style/12_nakaguro.md:中黒の禁止", messages = [
+        "「チェック処理とリソース情報の提供」に中黒は含まれていません。",
+    ]},
+]
+
+# =============================================================================
+# config.py
+# =============================================================================
+"src/kaizenlint/config.py" = [
+    { rule = "rules/python_style.md:NumPy 形式 docstring", messages = [
+        "2 つの小さな関数のみのモジュールであり、型注釈で入出力が明確です。",
+    ]},
+    { rule = "rules/python_style.md:Import Organization", messages = [
+        "stdlib (tomllib, pathlib) → local (kaizenlint) の 2 グループで正しいです。サードパーティ import はありません。",
+    ]},
+    { rule = "rules/python_style.md:docstring 必須", messages = [
+        "両関数に docstring があります。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:抽象的な名前よりも具体的な名前を使う", messages = [
+        "load_config, discover_config はそれぞれの動作を正確に表しています。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:セキュリティ上の注意が必要なデータに属性を追加する", messages = [
+        "TOML ファイルはユーザ自身の設定ファイルであり、Pydantic の model_validate で検証されます。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:変数名にフォーマットや型情報を追加する", messages = [
+        "data は TOML パース結果であり、直後に model_validate で消費されるため名前は十分です。",
+    ]},
+    { rule = "rules/readable_code/08_functions.md:オブジェクトから値を抽出する時は先に変数に割り当てる", messages = [
+        "discover_config では candidate と config を変数に割り当ててからタプルで返しています。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:プロジェクト固有の省略形を避ける", messages = [
+        "config は configuration の標準的な略語であり、プロジェクト固有ではありません。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コメントで関数の入出力例を示す", messages = [
+        "型注釈 (Path -> KaizenlintConfig) で入出力が明確です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コメントで実装の意図 (WHY) を記述する", messages = [
+        "CWD から親ディレクトリへ遡る探索は多くのツール (git, npm, cargo) で採用されるパターンであり、WHY は自明です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:ファイルやクラスに全体像のコメントを付ける", messages = [
+        "2 関数のみの小さなモジュールであり、関数名が全体像を示しています。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:自明な情報はコメントに書かない", messages = [
+        "load_config の docstring はバリデーション処理を行うことを示しており、関数名だけでは伝わらない情報です。",
+        "discover_config の docstring は探索方向とエラー条件を示しており、有用な情報です。",
+        "inline コメント (git/npm と同様) は設計の WHY を説明しています。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:関数の動作を正確に記述する", messages = [
+        "docstring に探索方向とエラー条件が記述されています。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:設計上の判断を記録する", messages = [
+        "TOML + Pydantic の選択は Python エコシステムの標準的な組み合わせであり、特筆すべき設計判断はありません。",
+    ]},
+    { rule = "rules/readable_code/04_layout.md:宣言をグループにまとめる", messages = [
+        "2 関数のみであり、セクション分けは冗長です。",
+    ]},
+    { rule = "rules/readable_code/07_variables.md:変数は一度だけ書き込む", messages = [
+        "candidate はループ本体内で毎回新しく計算される変数であり、前回の値に依存しません。directory / '.kaizenlint' / 'config.toml' という単一の式で代入されるため、実質的に一度だけ書き込まれています。",
+    ]},
+    { rule = "rules/readable_code/07_variables.md:役に立たない一時変数を削除する", messages = [
+        "data 変数は with ブロック内で TOML をパースした結果を保持しており、ファイルハンドルのスコープを明確にするために有用です。",
+    ]},
+    { rule = "rules/readable_code/08_functions.md:一度に 1 つのタスクを行うように構成する", messages = [
+        "discover_config は「設定ファイルを探索して読み込む」という 1 つの論理的タスクです。探索と読み込みは不可分な操作であり、分割すると呼び出し側の複雑さが増します。",
+    ]},
+    { rule = "rules/readable_code/10_testing.md:エラー メッセージは詳細で役に立つものにする", messages = [
+        "FileNotFoundError のメッセージにファイル名 (.kaizenlint/config.toml) が含まれており、デバッグに十分です。",
+    ]},
+]
+
+# =============================================================================
+# executor.py
+# =============================================================================
+"src/kaizenlint/executor.py" = [
+    { rule = "rules/python_style.md:NumPy 形式 docstring", messages = [
+        "execute メソッドは既に Parameters/Returns セクション付きの docstring を持っています。",
+    ]},
+    { rule = "rules/python_style.md:docstring 必須", messages = [
+        "全メソッドに docstring があります。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:抽象的な名前よりも具体的な名前を使う", messages = [
+        "Executor, AsyncExecutor はデザインパターン名に基づく標準的な命名です。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:変数名にフォーマットや型情報を追加する", messages = [
+        "semaphores, coros は短いメソッド内で使われる局所変数であり、型は明確です。key はリソースキーを表し、直後の semaphores[key] で使われるため文脈から明確です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コード内の罠や予期しない動作を警告する", messages = [
+        "asyncio.run の注意点はコメントで記載済みです。asyncio.as_completed は非同期プログラミングの標準パターンです。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コメントで関数の入出力例を示す", messages = [
+        "Protocol の execute メソッドは型注釈と docstring で仕様が明確です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コメントで実装の意図 (WHY) を記述する", messages = [
+        "モジュール docstring とクラス docstring で意図が説明されています。_run 内のコメントは WHY (同時リクエスト制限、リアルタイムフィードバック) を記述しています。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:自明な情報はコメントに書かない", messages = [
+        "コメントは WHY (同時リクエスト制限、リアルタイムフィードバック) を説明しており、自明ではありません。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:設計上の判断を記録する", messages = [
+        "エンドポイント単位セマフォの設計はクラス docstring に記載されています。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:関数の動作を正確に記述する", messages = [
+        "全メソッドに動作を記述した docstring があります。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:改善が必要なコードを文書化する", messages = [
+        "現時点で改善が必要な箇所はありません。",
+    ]},
+    { rule = "rules/readable_code/04_layout.md:宣言をグループにまとめる", messages = [
+        "Protocol + 実装クラスの 2 つで構成されており、グルーピングは自明です。",
+    ]},
+    { rule = "rules/readable_code/04_layout.md:コードを段落に分割する", messages = [
+        "_run メソッドはコメント行で段落化されています。",
+    ]},
+    { rule = "rules/readable_code/07_variables.md:変数は一度だけ書き込む", messages = [
+        "for ループ内の key と checker はイテレーション変数であり、各ループで新しい値を計算する Python の標準的なパターンです。coros.append はリスト構築であり再代入ではありません。",
+    ]},
+    { rule = "rules/readable_code/07_variables.md:役に立たない一時変数を削除する", messages = [
+        "coros は as_completed で消費されるため、必要な変数です。",
+    ]},
+    { rule = "rules/readable_code/08_functions.md:一度に 1 つのタスクを行うように構成する", messages = [
+        "Executor は非同期並列実行を統括するモジュールであり、「複数タスクの並列実行」が 1 つの責務です。",
+    ]},
+    { rule = "rules/readable_code/08_functions.md:複数の責務を持つクラスは分割する", messages = [
+        "AsyncExecutor は「セマフォ構築 + タスクスケジューリング」の 50 行以下のクラスです。分割するとクラス間の結合が増え、過度な抽象化になります。",
+    ]},
+    { rule = "rules/readable_code/08_functions.md:メモリ使用量を一定に保つ設計にする", messages = [
+        "kaizenlint はバッチ処理の CLI ツールです。起動 → チェック → 終了のライフサイクルであり、長時間稼働するサーバではありません。タスク数は有限 (ファイル数 × ルール数) であり、実行後にプロセスが終了するため固定メモリ設計は不要です。",
+    ]},
+    { rule = "rules/readable_code/08_functions.md:汎用ユーティリティ関数を作成する", messages = [
+        "executor 固有のロジックであり、汎用化する対象がありません。",
+    ]},
+    { rule = "rules/readable_code/10_testing.md:テストしやすい設計を心がける", messages = [
+        "Executor Protocol を定義しており、テスト時にモック実装を注入可能です。",
+    ]},
+    { rule = "rules/japanese_comment_style/10_english_terms.md:通常英語表記する用語", messages = [
+        "「チェック タスク」「コールバック」は日本語の技術文書で一般的な表記です。",
+    ]},
+    { rule = "rules/japanese_comment_style/11_period.md:文末の句点必須", messages = [
+        "NumPy docstring の Parameters/Returns セクション内の説明文は句点省略が慣習です。",
+    ]},
+    { rule = "rules/japanese_comment_style/08_katakana_compound.md:カタカナ複合語のスペース", messages = [
+        "「チェック タスク」はスペースで区切られており、ルールに準拠しています。",
+    ]},
+]
+
+# =============================================================================
+# files.py
+# =============================================================================
+"src/kaizenlint/files.py" = [
+    { rule = "rules/python_style.md:NumPy 形式 docstring", messages = [
+        "内部モジュールの小さな関数群であり、型注釈で入出力が明確です。",
+    ]},
+    { rule = "rules/python_style.md:docstring 必須", messages = [
+        "全関数に docstring があります。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:ループ イテレーターには説明的な名前をつける", messages = [
+        "target, part, child は処理対象を明確に示す名前です。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:ブール値の否定形を避ける", messages = [
+        "_is_excluded は「除外されるか」という問いに対する肯定形の関数名であり、if not child.is_file() は Python の慣用句です。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:スコープに合わせた名前の長さを選ぶ", messages = [
+        "target はループ本体の処理対象を明確に示す名前です。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:ブール値の名前に接頭辞をつける", messages = [
+        "respect_gitignore は TOML config フィールド名であり、リネームできません。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:抽象的な名前よりも具体的な名前を使う", messages = [
+        "resolve_files は「パスをファイルリストに解決する」という動作を表しています。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:汎用的な名前 (retval、tmp など) を避ける", messages = [
+        "rel は relative path の略であり、ローカルスコープ内で意味が明確です。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:名前付き引数コメントを使って引数を明確化する", messages = [
+        "_is_excluded の引数は型注釈 (Path, Path, PathSpec, PathSpec, bool) で明確です。5 引数は許容範囲内です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:自明な情報はコメントに書かない", messages = [
+        "docstring は関数の目的を簡潔に示しており、有用な情報です。inline コメントは WHY を説明しています。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コメント位置をコードの上に移動させる", messages = [
+        "コメントは既にコードブロックの上部に配置されています。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:設計上の判断を記録する", messages = [
+        "pathspec + rglob による走査はファイル探索の標準的なアプローチであり、特筆すべき判断はありません。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:ファイルやクラスに全体像のコメントを付ける", messages = [
+        "3 関数のみの小さなモジュールであり、関数名から全体像は明確です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:関数の動作を正確に記述する", messages = [
+        "各関数に動作を記述した docstring があります。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コメントで関数の入出力例を示す", messages = [
+        "型注釈で入出力が明確であり、I/O 例はテストコードで示すべきです。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コード内の罠や予期しない動作を警告する", messages = [
+        "ValueError catch は relative_to の仕様上の標準的なハンドリングです。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コメントで実装の意図 (WHY) を記述する", messages = [
+        "パスコンポーネント単位の exclude チェックの意図はコメントに記載済みです。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:大きなコード ブロックに要約コメントを付ける", messages = [
+        "resolve_files の各ブロックは 5〜10 行であり、「大きなコードブロック」には該当しません。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コメントを簡潔に保つ", messages = [
+        "2 行に分割したコメントは元の括弧注釈を解消するためであり、必要最小限です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:改善が必要なコードを文書化する", messages = [
+        "現時点で改善が必要な箇所はありません。",
+    ]},
+    { rule = "rules/readable_code/04_layout.md:宣言をグループにまとめる", messages = [
+        "3 関数のみであり、セクション分けは冗長です。",
+    ]},
+    { rule = "rules/readable_code/04_layout.md:コードを段落に分割する", messages = [
+        "resolve_files 内は空行と条件分岐で段落化されています。",
+    ]},
+    { rule = "rules/readable_code/05_control_flow.md:if/else ブロックは単純な条件を先に書く", messages = [
+        "if p.is_file() → elif p.is_dir() の順序はファイル → ディレクトリの自然な優先順位です。",
+    ]},
+    { rule = "rules/readable_code/05_control_flow.md:ネストを浅くする", messages = [
+        "ディレクトリ走査の for > if > if は不可避なネストです。continue によるガード節を既に使用しています。",
+    ]},
+    { rule = "rules/readable_code/06_expressions.md:要約変数で複雑な条件を単純化", messages = [
+        "各条件は 1 つの関数呼び出しであり、十分に単純です。",
+    ]},
+    { rule = "rules/readable_code/06_expressions.md:重複した式を変数に抽出する", messages = [
+        "_is_excluded の呼び出しはファイルとディレクトリで引数が異なるため、重複ではありません。",
+    ]},
+    { rule = "rules/readable_code/06_expressions.md:巨大な式を分割する", messages = [
+        "pathspec.PathSpec.from_lines の呼び出しは API の正しい使い方であり、分割すると可読性が下がります。",
+    ]},
+    { rule = "rules/readable_code/07_variables.md:変数は一度だけ書き込む", messages = [
+        "target = target.resolve() はパスの正規化であり、同一概念の変換です。",
+        "_is_excluded 内の rel の try/except 代入は Python の EAFP パターンです。try と except のどちらか一方だけが実行されるため、実質的に一度だけ書き込まれます。resolve_files 内の rel も同様です。",
+        "resolved.append はリスト構築であり再代入ではありません。",
+    ]},
+    { rule = "rules/readable_code/07_variables.md:役に立たない一時変数を削除する", messages = [
+        "rel_str は rel を文字列に変換した値で、match_file に複数回渡されるため必要です。",
+    ]},
+    { rule = "rules/readable_code/08_functions.md:オブジェクトから値を抽出する時は先に変数に割り当てる", messages = [
+        "config.include, config.exclude 等は 1 レベルのアクセスであり、変数への事前割り当ては冗長です。",
+    ]},
+    { rule = "rules/readable_code/09_libraries.md:標準ライブラリを定期的に学習する", messages = [
+        "pathspec は .gitignore の gitwildmatch パターンを正しく処理する唯一のライブラリです。fnmatch や glob では gitignore の全仕様をカバーできません。",
+    ]},
+    { rule = "rules/japanese_comment_style/07_chouon.md:カタカナ長音", messages = [
+        "「ディレクトリ」は JIS X 0301 に準拠した表記です。",
+    ]},
+    { rule = "rules/japanese_comment_style/04_spacing.md:半角と全角の間のスペース", messages = [
+        "docstring 内の英単語と日本語の間にスペースを入れるかは統一的なルールがなく、現状の表記で問題ありません。",
+    ]},
+    { rule = "rules/japanese_comment_style/10_english_terms.md:通常英語表記する用語", messages = [
+        "「ディレクトリ」「ファイル」は日本語の技術文書で一般的なカタカナ表記です。",
+    ]},
+    { rule = "rules/japanese_comment_style/13_trailing_paren.md:括弧による注釈の後置禁止", messages = [
+        "括弧注釈は既に解消して別行コメントに分離済みです。",
+    ]},
+]
+
+# =============================================================================
+# rules.py
+# =============================================================================
+"src/kaizenlint/rules.py" = [
+    { rule = "rules/python_style.md:NumPy 形式 docstring", messages = [
+        "内部モジュールの小さな関数群であり、型注釈で入出力が明確です。",
+    ]},
+    { rule = "rules/python_style.md:docstring 必須", messages = [
+        "全関数に docstring があります。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:セキュリティ上の注意が必要なデータに属性を追加する", messages = [
+        "ルールファイルはプロジェクト内の Markdown ファイルであり、untrusted input ではありません。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:ループ イテレーターには説明的な名前をつける", messages = [
+        "i, token はループ本体が短いため文脈から意味が明確です。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:包含排他的範囲には begin と end を使う", messages = [
+        "start_line/end_line は markdown-it のトークン位置に対応する変数名であり、begin/end よりもドメインに即しています。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:汎用的な名前 (retval、tmp など) を避ける", messages = [
+        "sp は source_path の略で、直後に parse_rule_file の引数として使われるため文脈から明確です。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:変数名にフォーマットや型情報を追加する", messages = [
+        "sp は 3 行のスコープ内で使われる局所変数であり、型情報の付加は冗長です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コメントで関数の入出力例を示す", messages = [
+        "型注釈 (Path -> list[LintRule]) で入出力が明確です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コメントで実装の意図 (WHY) を記述する", messages = [
+        "H2 見出しでルールを分割する意図は docstring から明確です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コード内の罠や予期しない動作を警告する", messages = [
+        "enumerate でインデックスを取得しており、罠となる処理はありません。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:ファイルやクラスに全体像のコメントを付ける", messages = [
+        "3 関数のみの小さなモジュールであり、関数名から全体像は明確です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:自明な情報はコメントに書かない", messages = [
+        "「H2 見出しの開始行を収集」等のコメントはアルゴリズムのステップを示す有用な情報です。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:設計上の判断を記録する", messages = [
+        "frontmatter + markdown-it の選択は Markdown パースの標準的なアプローチであり、特筆すべき判断はありません。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:関数の動作を正確に記述する", messages = [
+        "各関数に動作を記述した docstring があります。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:大きなコード ブロックに要約コメントを付ける", messages = [
+        "parse_rule_file は 25 行以下であり、「大きなコードブロック」には該当しません。",
+    ]},
+    { rule = "rules/readable_code/04_layout.md:宣言をグループにまとめる", messages = [
+        "3 関数のみであり、セクション分けは冗長です。",
+    ]},
+    { rule = "rules/readable_code/05_control_flow.md:if/else ブロックは単純な条件を先に書く", messages = [
+        "token.type == 'heading_open' を先に書くことで「見出しを探している」という意図が最初に伝わります。token.map は後続処理の前提条件であり、意図の表現としては最後に置くのが自然です。",
+        "try/except ValueError は relative_to の EAFP パターンであり、if/else の順序とは無関係です。",
+    ]},
+    { rule = "rules/readable_code/06_expressions.md:要約変数で複雑な条件を単純化", messages = [
+        "条件式は token.type == 'heading_open' and token.tag == 'h2' and token.map の連接であり、要約変数を導入するほど複雑ではありません。",
+    ]},
+    { rule = "rules/readable_code/06_expressions.md:巨大な式を分割する", messages = [
+        "if token.type == 'heading_open' and token.tag == 'h2' and token.map は 3 つの短い属性比較の and 連接です。各条件は属性アクセス 1 回で完結しており、巨大な式には該当しません。中間変数を導入すると逆に冗長になります。",
+        "f-string の結合やリスト内包表記は Pythonic な記法です。",
+    ]},
+    { rule = "rules/readable_code/07_variables.md:変数は一度だけ書き込む", messages = [
+        "sp の try/except 代入は Python の EAFP パターンです。try と except のどちらか一方だけが実行されるため、実質的に一度だけ書き込まれます。",
+        "for ループのイテレーション変数は Python の標準的なパターンです。",
+    ]},
+    { rule = "rules/readable_code/07_variables.md:変数定義を使用直前に移動する", messages = [
+        "md と tokens はセクションコメント直後で定義されており、使用箇所の直前です。",
+    ]},
+    { rule = "rules/readable_code/08_functions.md:一度に 1 つのタスクを行うように構成する", messages = [
+        "resolve_rules は「ルールファイルの探索とパース」という 1 つの論理的タスクです。",
+    ]},
+    { rule = "rules/readable_code/08_functions.md:無関係の下位問題を別関数に抽出する", messages = [
+        "_parse_checker は既に抽出済みです。H2 パースは parse_rule_file の中核ロジックです。",
+    ]},
+    { rule = "rules/readable_code/08_functions.md:オブジェクトから値を抽出する時は先に変数に割り当てる", messages = [
+        "1 レベルのアクセス (token.type, token.map) は変数への事前割り当て不要です。",
+    ]},
+    { rule = "rules/readable_code/09_libraries.md:ライブラリの機能を活用してコードを簡潔にする", messages = [
+        "markdown-it と frontmatter を活用しています。enumerate によるインデックス取得も標準的なパターンです。",
+    ]},
+    { rule = "rules/readable_code/01_basics.md:理解性を最優先にコードを書く", messages = [
+        "H2 見出しの位置収集 → セクション切り出し → LintRule 構築の流れは論理的で理解しやすいです。",
+    ]},
+    { rule = "rules/japanese_comment_style/03_colon.md:コロンの日本語的使用", messages = [
+        "docstring 内のコロンは Python の慣用的な記法 (「プロジェクト + 個人ルールのハイブリッドです。」) であり、日本語文中のコロンではありません。",
+    ]},
+    { rule = "rules/japanese_comment_style/05_comma.md:日本語文中のカンマ・コロン", messages = [
+        "docstring 内の表記であり、日本語文中のカンマ使用には該当しません。",
+    ]},
+    { rule = "rules/japanese_comment_style/08_katakana_compound.md:カタカナ複合語のスペース", messages = [
+        "「ハイブリッド」は単一のカタカナ語であり、複合語ではありません。",
+    ]},
+    { rule = "rules/japanese_comment_style/07_chouon.md:カタカナ長音", messages = [
+        "「ルールファイル」「パーサ」等は JIS X 0301 に準拠した標準的な表記です。",
+    ]},
+]

@@ -63,6 +63,7 @@ class AsyncExecutor:
         -------
         None
         """
+        # 注意: 既存のイベントループ内から呼ぶと RuntimeError になります。
         asyncio.run(self._run(tasks, config, on_result))
 
     async def _run(
@@ -72,22 +73,19 @@ class AsyncExecutor:
         on_result: ResultCallback,
     ) -> None:
         """全タスクを並列にスケジュールし、完了順にコールバックを実行します。"""
-        # リソース キーごとにセマフォを構築します
+        # 同一エンドポイントへの同時リクエスト数を制限するため、
+        # リソース キーごとにセマフォを構築しつつコルーチンを生成します。
         semaphores: dict[str, asyncio.Semaphore] = {}
-        task_keys: list[str] = []
+        coros = []
         for task in tasks:
             checker = task.rule.checker
             key = resource_key(checker, config)
-            task_keys.append(key)
             if key not in semaphores:
-                limit = max_concurrency(checker, config)
-                semaphores[key] = asyncio.Semaphore(limit)
+                semaphores[key] = asyncio.Semaphore(max_concurrency(checker, config))
+            coros.append(self._run_one(task, config, semaphores[key]))
 
-        # 全タスクを並列実行し、完了順にコールバックを呼びます
-        coros = [
-            self._run_one(task, config, semaphores[key])
-            for task, key in zip(tasks, task_keys)
-        ]
+        # ユーザーへのリアルタイム フィードバックのため、
+        # 完了順にコールバックを呼びます。
         for coro in asyncio.as_completed(coros):
             task, violation = await coro
             on_result(task, violation)

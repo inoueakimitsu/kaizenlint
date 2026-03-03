@@ -6,7 +6,7 @@ from kaizenlint.models import KaizenlintConfig
 
 
 def _load_gitignore(directory: Path) -> pathspec.PathSpec:
-    """directory 内の .gitignore を読み込んで PathSpec を返す。"""
+    """directory 内の .gitignore を読み込んで PathSpec を返します。"""
     gitignore = directory / ".gitignore"
     if gitignore.is_file():
         return pathspec.PathSpec.from_lines("gitwildmatch", gitignore.read_text().splitlines())
@@ -20,7 +20,7 @@ def _is_excluded(
     gitignore_spec: pathspec.PathSpec,
     respect_gitignore: bool,
 ) -> bool:
-    """path が exclude または gitignore にマッチするか判定。"""
+    """path が exclude または gitignore にマッチするか判定します。"""
     try:
         rel = path.relative_to(base)
     except ValueError:
@@ -28,7 +28,8 @@ def _is_excluded(
 
     rel_str = str(rel)
 
-    # パスコンポーネント単位でも exclude をチェック（.venv がどの深さでも効く）
+    # .venv 等のパターンがディレクトリ階層のどの深さでも効くようにするため、
+    # パス コンポーネント単位でも exclude を照合します。
     for part in rel.parts:
         if exclude_spec.match_file(part):
             return True
@@ -46,7 +47,7 @@ def resolve_files(
     config: KaizenlintConfig,
     config_dir: Path,
 ) -> list[Path]:
-    """対象ファイルを解決する。ディレクトリは再帰走査、ファイルはそのまま。"""
+    """対象ファイルを解決します。ディレクトリは再帰走査し、ファイルはそのまま返します。"""
     project_root = config_dir.parent
     include_spec = pathspec.PathSpec.from_lines("gitwildmatch", config.include)
     all_excludes = config.exclude + config.extend_exclude
@@ -55,16 +56,16 @@ def resolve_files(
 
     resolved: list[Path] = []
 
-    for p in paths:
-        p = p.resolve()
-        if p.is_file():
+    for target in paths:
+        target = target.resolve()
+        if target.is_file():
             if config.force_exclude and _is_excluded(
-                p, project_root, exclude_spec, gitignore_spec, config.respect_gitignore
+                target, project_root, exclude_spec, gitignore_spec, config.respect_gitignore
             ):
                 continue
-            resolved.append(p)
-        elif p.is_dir():
-            for child in sorted(p.rglob("*")):
+            resolved.append(target)
+        elif target.is_dir():
+            for child in sorted(target.rglob("*")):
                 if not child.is_file():
                     continue
                 if _is_excluded(

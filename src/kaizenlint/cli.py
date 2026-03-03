@@ -1,4 +1,4 @@
-"""kaizenlint の CLI エントリー ポイントを提供します。"""
+"""kaizenlint の CLI エントリ ポイントを提供します。"""
 
 from __future__ import annotations
 
@@ -10,10 +10,28 @@ import typer
 from kaizenlint.config import discover_config, load_config
 from kaizenlint.executor import AsyncExecutor
 from kaizenlint.files import resolve_files
-from kaizenlint.models import CheckTask, LintSource, LintSourceName, LintViolation
+from kaizenlint.models import (
+    CheckTask,
+    KaizenlintConfig,
+    LintSource,
+    LintSourceName,
+    LintViolation,
+    SuppressionEntry,
+)
 from kaizenlint.rules import resolve_rules
 
 app = typer.Typer(add_completion=False)
+
+
+def _build_suppression_index(
+    config: KaizenlintConfig,
+) -> dict[tuple[str, str], SuppressionEntry]:
+    index: dict[tuple[str, str], SuppressionEntry] = {}
+    for file_path, entries in config.suppression.items():
+        normalized = Path(file_path).as_posix()
+        for entry in entries:
+            index[(normalized, entry.rule)] = entry
+    return index
 
 
 @app.callback(invoke_without_command=True)
@@ -28,7 +46,7 @@ def _callback(ctx: typer.Context) -> None:
 def check_cmd(
     files: Annotated[
         Optional[list[Path]],
-        typer.Argument(help="対象ファイル / ディレクトリーです。省略時はカレント ディレクトリーを使います。"),
+        typer.Argument(help="対象ファイル / ディレクトリです。省略時はカレント ディレクトリを使います。"),
     ] = None,
     exclude: Annotated[
         Optional[list[str]],
@@ -56,7 +74,7 @@ def check_cmd(
     Parameters
     ----------
     files: Optional[list[Path]]
-        対象ファイル / ディレクトリーです。省略時はカレント ディレクトリーを使います。
+        対象ファイル / ディレクトリです。省略時はカレント ディレクトリを使います。
     exclude: Optional[list[str]]
         config の exclude を上書きします。
     extend_exclude: Optional[list[str]]
@@ -105,26 +123,83 @@ def check_cmd(
 
     typer.echo(f"Checking {len(resolved)} file(s) with {len(rules)} rule(s)...")
 
+    project_root = config_dir.parent
+    suppression_index = _build_suppression_index(config)
+    used_suppressions: set[tuple[str, str]] = set()
+
     tasks: list[CheckTask] = []
+    # タスクごとの rel_file と rule_key を保持します。tips 出力に使います。
+    task_keys: dict[int, tuple[str, str]] = {}
+
     for filepath in resolved:
         source = LintSource(content=filepath.read_text())
         source_name = LintSourceName(name=str(filepath))
+
+        try:
+            rel_file = filepath.relative_to(project_root).as_posix()
+        except ValueError:
+            rel_file = None
+
         for rule in rules:
-            tasks.append(CheckTask(source=source, source_name=source_name, rule=rule))
+            rule_key = f"{rule.source_path}:{rule.title}"
+            lookup_key = (rel_file, rule_key) if rel_file else None
+            entry = suppression_index.get(lookup_key) if lookup_key else None
+
+            if entry is not None:
+                used_suppressions.add(lookup_key)  # type: ignore[arg-type]
+                if entry.messages is None:
+                    continue  # skip
+                supplement = entry.messages
+            else:
+                supplement = []
+
+            task = CheckTask(
+                source=source,
+                source_name=source_name,
+                rule=rule,
+                supplement_messages=supplement,
+            )
+            task_keys[id(task)] = (
+                rel_file or str(filepath),
+                rule_key,
+            )
+            tasks.append(task)
+
+    # 未使用の suppression を警告します。
+    for key in suppression_index:
+        if key not in used_suppressions:
+            typer.echo(
+                f"Warning: 未使用の suppression: {key[0]} × {key[1]}", err=True
+            )
 
     executor = AsyncExecutor()
-    has_violations = False
+    violations_for_tips: list[tuple[str, str]] = []
 
     def on_result(task: CheckTask, violation: LintViolation | None) -> None:
         """チェック結果を受け取り、違反があれば出力します。"""
-        nonlocal has_violations
         if violation is not None:
-            has_violations = True
             typer.echo(
                 f"{task.source_name.name}:  [{violation.rule.title}] {violation.message.text}"
             )
+            tk = task_keys.get(id(task))
+            if tk:
+                violations_for_tips.append(tk)
 
     executor.execute(tasks, config, on_result)
 
-    if has_violations:
+    if violations_for_tips:
+        typer.echo("\n--- Suppression Tips ---", err=True)
+        typer.echo(
+            "誤検知を抑制するには .kaizenlint/config.toml の [suppression] に追加してください。",
+            err=True,
+        )
+        by_file: dict[str, list[str]] = {}
+        for rel_file_tip, rule_key_tip in violations_for_tips:
+            by_file.setdefault(rel_file_tip, []).append(rule_key_tip)
+        for file_path, rule_key_list in by_file.items():
+            typer.echo("\n[suppression]", err=True)
+            typer.echo(f'"{file_path}" = [', err=True)
+            for rule_key in rule_key_list:
+                typer.echo(f'    {{ rule = "{rule_key}" }},  # skip', err=True)
+            typer.echo("]", err=True)
         raise typer.Exit(1)

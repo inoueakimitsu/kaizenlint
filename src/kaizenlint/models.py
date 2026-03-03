@@ -1,6 +1,6 @@
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class LlmCheckerConfig(BaseModel):
@@ -18,10 +18,16 @@ CheckerConfig = LlmCheckerConfig | RegexCheckerConfig
 DEFAULT_CHECKER_CONFIG = LlmCheckerConfig()
 
 
+class SuppressionEntry(BaseModel):
+    rule: str
+    messages: list[str] | None = Field(default=None, min_length=1)
+
+
 class LintRule(BaseModel):
     title: str
     description: str
     checker: Annotated[CheckerConfig, Field(discriminator="type")]
+    source_path: str = ""
 
 
 class LintSource(BaseModel):
@@ -45,6 +51,7 @@ class CheckTask(BaseModel):
     source: LintSource
     source_name: LintSourceName
     rule: LintRule
+    supplement_messages: list[str] = Field(default_factory=list)
 
 
 class _LlmJudgement(BaseModel):
@@ -90,3 +97,16 @@ class KaizenlintConfig(BaseModel):
     force_exclude: bool = Field(default=False, alias="force-exclude")
     respect_gitignore: bool = Field(default=True, alias="respect-gitignore")
     rules: list[str] = Field(default_factory=lambda: ["rules/**/*.md"])
+    suppression: dict[str, list[SuppressionEntry]] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _validate_suppression_no_duplicates(self) -> Self:
+        for file_path, entries in self.suppression.items():
+            seen: set[str] = set()
+            for entry in entries:
+                if entry.rule in seen:
+                    raise ValueError(
+                        f"suppression の重複です。ファイル {file_path!r} にルール {entry.rule!r} が複数回定義されています。"
+                    )
+                seen.add(entry.rule)
+        return self
