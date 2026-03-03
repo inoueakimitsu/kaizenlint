@@ -1,6 +1,8 @@
+import fnmatch
+from pathlib import Path
 from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class LlmCheckerConfig(BaseModel):
@@ -28,6 +30,34 @@ class LintRule(BaseModel):
     description: str
     checker: Annotated[CheckerConfig, Field(discriminator="type")]
     source_path: str = ""
+    applies_to: list[str] = Field(default_factory=list)
+
+    @field_validator("applies_to", mode="before")
+    @classmethod
+    def _coerce_applies_to(cls, v: object) -> list[str]:
+        if v is None:
+            return []
+        if isinstance(v, str):
+            return [v]
+        if isinstance(v, list):
+            if not all(isinstance(item, str) for item in v):
+                raise ValueError(
+                    f"applies_to の要素はすべて文字列で指定してください (got {v!r})"
+                )
+            return v
+        raise ValueError(
+            f"applies_to はリストまたは文字列で指定してください (got {type(v).__name__})"
+        )
+
+    def matches_file(self, filepath: Path) -> bool:
+        """applies_to パターンでファイルをフィルタリングします。
+
+        filepath.name（ファイル名のみ）に対して fnmatch でマッチします。
+        パス成分は考慮されません。applies_to が空の場合は全ファイルにマッチします。
+        """
+        if not self.applies_to:
+            return True
+        return any(fnmatch.fnmatch(filepath.name, pat) for pat in self.applies_to)
 
 
 class LintSource(BaseModel):

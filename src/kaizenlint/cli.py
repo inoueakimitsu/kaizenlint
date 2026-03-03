@@ -13,6 +13,7 @@ from kaizenlint.files import resolve_files
 from kaizenlint.models import (
     CheckTask,
     KaizenlintConfig,
+    LintRule,
     LintSource,
     LintSourceName,
     LintViolation,
@@ -32,6 +33,63 @@ def _build_suppression_index(
         for entry in entries:
             index[(normalized, entry.rule)] = entry
     return index
+
+
+def _build_tasks(
+    resolved: list[Path],
+    rules: list[LintRule],
+    project_root: Path,
+    suppression_index: dict[tuple[str, str], SuppressionEntry],
+) -> tuple[list[CheckTask], dict[int, tuple[str, str]], set[tuple[str, str]]]:
+    """タスクリストを構築し、task_keys と used_suppressions を返します。
+
+    resolved の各 Path に対して read_text() / LintSource / LintSourceName を内部で構築します。
+    """
+    tasks: list[CheckTask] = []
+    task_keys: dict[int, tuple[str, str]] = {}
+    used_suppressions: set[tuple[str, str]] = set()
+
+    for filepath in resolved:
+        source = LintSource(content=filepath.read_text())
+        source_name = LintSourceName(name=str(filepath))
+
+        try:
+            rel_file = filepath.relative_to(project_root).as_posix()
+        except ValueError:
+            rel_file = None
+
+        for rule in rules:
+            rule_key = f"{rule.source_path}:{rule.title}"
+            lookup_key = (rel_file, rule_key) if rel_file else None
+
+            if not rule.matches_file(filepath):
+                if lookup_key and lookup_key in suppression_index:
+                    used_suppressions.add(lookup_key)
+                continue
+
+            entry = suppression_index.get(lookup_key) if lookup_key else None
+
+            if entry is not None:
+                used_suppressions.add(lookup_key)  # type: ignore[arg-type]
+                if entry.messages is None:
+                    continue  # skip
+                supplement = entry.messages
+            else:
+                supplement = []
+
+            task = CheckTask(
+                source=source,
+                source_name=source_name,
+                rule=rule,
+                supplement_messages=supplement,
+            )
+            task_keys[id(task)] = (
+                rel_file or str(filepath),
+                rule_key,
+            )
+            tasks.append(task)
+
+    return tasks, task_keys, used_suppressions
 
 
 @app.callback(invoke_without_command=True)
@@ -121,49 +179,25 @@ def check_cmd(
         typer.echo("No rules found.")
         raise typer.Exit(0)
 
+    warned_patterns: set[tuple[str, str]] = set()
+    for rule in rules:
+        for pat in rule.applies_to:
+            if ("/" in pat or "**" in pat) and (rule.source_path, pat) not in warned_patterns:
+                warned_patterns.add((rule.source_path, pat))
+                typer.echo(
+                    f"Warning: applies_to パターン {pat!r} ({rule.source_path}) は"
+                    " ファイル名のみでマッチされます。パス区切りや ** は無視されます。",
+                    err=True,
+                )
+
     typer.echo(f"Checking {len(resolved)} file(s) with {len(rules)} rule(s)...")
 
     project_root = config_dir.parent
     suppression_index = _build_suppression_index(config)
-    used_suppressions: set[tuple[str, str]] = set()
 
-    tasks: list[CheckTask] = []
-    # タスクごとの rel_file と rule_key を保持します。tips 出力に使います。
-    task_keys: dict[int, tuple[str, str]] = {}
-
-    for filepath in resolved:
-        source = LintSource(content=filepath.read_text())
-        source_name = LintSourceName(name=str(filepath))
-
-        try:
-            rel_file = filepath.relative_to(project_root).as_posix()
-        except ValueError:
-            rel_file = None
-
-        for rule in rules:
-            rule_key = f"{rule.source_path}:{rule.title}"
-            lookup_key = (rel_file, rule_key) if rel_file else None
-            entry = suppression_index.get(lookup_key) if lookup_key else None
-
-            if entry is not None:
-                used_suppressions.add(lookup_key)  # type: ignore[arg-type]
-                if entry.messages is None:
-                    continue  # skip
-                supplement = entry.messages
-            else:
-                supplement = []
-
-            task = CheckTask(
-                source=source,
-                source_name=source_name,
-                rule=rule,
-                supplement_messages=supplement,
-            )
-            task_keys[id(task)] = (
-                rel_file or str(filepath),
-                rule_key,
-            )
-            tasks.append(task)
+    tasks, task_keys, used_suppressions = _build_tasks(
+        resolved, rules, project_root, suppression_index
+    )
 
     # 未使用の suppression を警告します。
     for key in suppression_index:

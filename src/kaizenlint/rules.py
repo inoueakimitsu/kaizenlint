@@ -31,10 +31,15 @@ def _parse_checker(
 
 
 def parse_rule_file(path: Path, source_path: str = "") -> list[LintRule]:
-    """ルール ファイルをパースしてルールのリストを返します。"""
+    """ルール ファイルをパースしてルールのリストを返します。
+
+    frontmatter の ``applies_to`` はファイル単位で定義され、
+    同一ファイル内の全ルールに共有されます。
+    """
     # frontmatter から checker 設定を取得し、本文をパースします。
     post = frontmatter.load(str(path))
     checker = _parse_checker(post.metadata)
+    applies_to: list[str] = post.metadata.get("applies_to", [])
     body = post.content
     lines = body.splitlines()
 
@@ -62,6 +67,7 @@ def parse_rule_file(path: Path, source_path: str = "") -> list[LintRule]:
                 description=description,
                 checker=checker,
                 source_path=source_path,
+                applies_to=applies_to,
             )
         )
 
