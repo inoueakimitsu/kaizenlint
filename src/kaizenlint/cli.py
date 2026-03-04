@@ -211,9 +211,10 @@ def check_cmd(
 
     def on_result(task: CheckTask, violation: LintViolation | None) -> None:
         """チェック結果を受け取り、違反があれば出力します。"""
+        hint_label = " (hint適用中)" if task.supplement_messages else ""
         if violation is not None:
             typer.echo(
-                f"{task.source_name.name}:  [{violation.rule.title}] {violation.message.text}"
+                f"{task.source_name.name}:  [{violation.rule.title}]{hint_label} {violation.message.text}"
             )
             tk = task_keys.get(id(task))
             if tk:
@@ -222,9 +223,13 @@ def check_cmd(
     executor.execute(tasks, config, on_result)
 
     if violations_for_tips:
-        typer.echo("\n--- Suppression Tips ---", err=True)
+        typer.echo("\n--- Tips ---", err=True)
         typer.echo(
-            "誤検知を抑制するには .kaizenlint/config.toml の [suppression] に追加してください。",
+            "意図的な設計判断であれば messages で理由を記載してください。",
+            err=True,
+        )
+        typer.echo(
+            "LLM が理由を考慮して再判定します。それでも解決しない場合のみ skip を検討してください。",
             err=True,
         )
         by_file: dict[str, list[str]] = {}
@@ -234,6 +239,19 @@ def check_cmd(
             typer.echo("\n[suppression]", err=True)
             typer.echo(f'"{file_path}" = [', err=True)
             for rule_key in rule_key_list:
-                typer.echo(f'    {{ rule = "{rule_key}" }},  # skip', err=True)
+                typer.echo(
+                    f'    {{ rule = "{rule_key}",'
+                    ' messages = ["ここに理由を記載"] },',
+                    err=True,
+                )
             typer.echo("]", err=True)
+        typer.echo(
+            "\n# 完全にスキップする場合 (最終手段):",
+            err=True,
+        )
+        typer.echo(
+            '#   { rule = "...", messages = [...] } の代わりに'
+            ' { rule = "..." } と書きます。',
+            err=True,
+        )
         raise typer.Exit(1)
