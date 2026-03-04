@@ -122,6 +122,10 @@ def check_cmd(
         Optional[bool],
         typer.Option(help=".gitignore を尊重します。"),
     ] = None,
+    show_rule: Annotated[
+        Optional[bool],
+        typer.Option("--show-rule/--no-show-rule", help="違反出力にルールの説明を表示します。"),
+    ] = None,
     config_path: Annotated[
         Optional[Path],
         typer.Option("--config", help="config ファイル パスを指定します。"),
@@ -165,6 +169,8 @@ def check_cmd(
         config.force_exclude = force_exclude
     if respect_gitignore is not None:
         config.respect_gitignore = respect_gitignore
+    if show_rule is not None:
+        config.show_rule = show_rule
 
     target_paths = files if files else [Path(".")]
     resolved = resolve_files(target_paths, config, config_dir)
@@ -216,6 +222,9 @@ def check_cmd(
             typer.echo(
                 f"{task.source_name.name}:  [{violation.rule.title}]{hint_label} {violation.message.text}"
             )
+            if config.show_rule:
+                for line in violation.rule.description.splitlines():
+                    typer.echo(f"  | {line}")
             tk = task_keys.get(id(task))
             if tk:
                 violations_for_tips.append(tk)

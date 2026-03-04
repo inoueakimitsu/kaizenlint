@@ -127,6 +127,7 @@ class KaizenlintConfig(BaseModel):
     force_exclude: bool = Field(default=False, alias="force-exclude")
     respect_gitignore: bool = Field(default=True, alias="respect-gitignore")
     rules: list[str] = Field(default_factory=lambda: ["rules/**/*.md"])
+    show_rule: bool = Field(default=True, alias="show-rule")
     suppression: dict[str, list[SuppressionEntry]] = Field(default_factory=dict)
 
     @model_validator(mode="after")
