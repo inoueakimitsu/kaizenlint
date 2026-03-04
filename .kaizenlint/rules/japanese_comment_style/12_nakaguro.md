@@ -1,5 +1,5 @@
 ---
-applies_to: ["*.py", "*.md"]
+applies_to: ["*.py", "*.md", "*.txt", "*.rst", "*.sh", "*.yml", "*.yaml", "*.toml", "*.conf", "*.cfg", "*.ini", "*.js", "*.ts", "*.tsx", "*.jsx", "*.java", "*.rb", "*.go", "*.c", "*.cpp", "*.cxx", "*.rs", "*.cs", "*.kt", "*.swift"]
 ---
 ## 中黒の禁止
 

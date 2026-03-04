@@ -1,5 +1,5 @@
 ---
-applies_to: ["*.py", "*.cpp", "*.cxx", "*.ts", "*.tsx", "*.js", "*.jsx", "*.java", "*.rb", "*.go", "*.c"]
+applies_to: ["*.py", "*.cpp", "*.cxx", "*.ts", "*.tsx", "*.js", "*.jsx", "*.java", "*.rb", "*.go", "*.c", "*.sh", "*.rs", "*.cs", "*.kt", "*.swift", "*.php", "*.scala", "*.lua"]
 ---
 # コードレビューとコミット
 
