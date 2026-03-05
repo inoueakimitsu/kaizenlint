@@ -358,6 +358,12 @@ def check_cmd(
             if tk:
                 violations_for_tips.append(tk)
 
+    # --max-fail 使用時のみシャッフル。偽陽性による枠消費を反復ごとに分散する。
+    if max_fail is not None:
+        import random
+
+        random.shuffle(tasks)
+
     result = executor.execute(tasks, config, on_result, max_fail=max_fail)
 
     if result.is_drain_activated:
