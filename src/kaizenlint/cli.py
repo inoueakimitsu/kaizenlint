@@ -214,6 +214,8 @@ def check_cmd(
         config.respect_gitignore = respect_gitignore
     if show_rule is not None:
         config.show_rule = show_rule
+    if max_fail is not None:
+        config.max_fail = max_fail
 
     # stdin モードの判定とバリデーション
     # resolve_files より前に配置し、ファイル解決前に分岐します。
@@ -359,22 +361,22 @@ def check_cmd(
                 violations_for_tips.append(tk)
 
     # --max-fail 使用時のみシャッフル。偽陽性による枠消費を反復ごとに分散する。
-    if max_fail is not None:
+    if config.max_fail is not None:
         import random
 
         random.shuffle(tasks)
 
-    result = executor.execute(tasks, config, on_result, max_fail=max_fail)
+    result = executor.execute(tasks, config, on_result, max_fail=config.max_fail)
 
     if result.is_drain_activated:
         if result.skipped > 0:
             typer.echo(
-                f"\n--max-fail={max_fail} に達したため中断しました（{result.skipped} 件のタスクをスキップ）。",
+                f"\n--max-fail={config.max_fail} に達したため中断しました（{result.skipped} 件のタスクをスキップ）。",
                 err=True,
             )
         else:
             typer.echo(
-                f"\n--max-fail={max_fail} に達しました（全タスクは実行済み）。",
+                f"\n--max-fail={config.max_fail} に達しました（全タスクは実行済み）。",
                 err=True,
             )
 

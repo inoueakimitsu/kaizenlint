@@ -132,6 +132,7 @@ class KaizenlintConfig(BaseModel):
     respect_gitignore: bool = Field(default=True, alias="respect-gitignore")
     rules: list[str] = Field(default_factory=lambda: ["rules/**/*.md"])
     show_rule: bool = Field(default=True, alias="show-rule")
+    max_fail: int | None = Field(default=None, alias="max-fail", ge=0)
     suppression: dict[str, list[SuppressionEntry]] = Field(default_factory=dict)
 
     @model_validator(mode="after")
