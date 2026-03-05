@@ -1,4 +1,13 @@
-"""kaizenlint の CLI エントリ ポイントを提供します。"""
+"""kaizenlint の CLI entry point です。
+
+check サブコマンドを提供し、ファイルまたは stdin の内容を
+設定済みのルール群でチェックします。違反検出時はメッセージを
+出力し、suppression のヒントを表示します。
+
+config の読み込みは kaizenlint.config、ファイル解決は
+kaizenlint.files、ルール解決は kaizenlint.rules、
+非同期チェック実行は kaizenlint.executor に委譲します。
+"""
 
 from __future__ import annotations
 
@@ -149,29 +158,35 @@ def check_cmd(
 
     Parameters
     ----------
-    files: Optional[list[Path]]
-        対象ファイル / ディレクトリです。省略時はカレント ディレクトリを使います。
-    exclude: Optional[list[str]]
+    files : Optional[list[Path]]
+        対象ファイルまたはディレクトリです。
+        省略時はカレントディレクトリを使います。
+        ``-`` を指定すると stdin から読み込みます。
+    exclude : Optional[list[str]]
         config の exclude を上書きします。
-    extend_exclude: Optional[list[str]]
+    extend_exclude : Optional[list[str]]
         config の exclude に追加します。
-    force_exclude: Optional[bool]
+    force_exclude : Optional[bool]
         明示ファイルにも exclude を適用します。
-    respect_gitignore: Optional[bool]
+    respect_gitignore : Optional[bool]
         .gitignore を尊重するかを指定します。
-    config_path: Optional[Path]
-        config ファイル パスを指定します。
+    show_rule : Optional[bool]
+        違反出力にルールの説明を表示します。
+    stdin_filename : Optional[str]
+        stdin の内容をこのファイル名として扱います。
+    config_path : Optional[Path]
+        config ファイルパスを指定します。
 
     Raises
     ------
     typer.Exit
         違反があれば exit code 1 で終了します。
     """
-    if config_path is not None:
-        config_file = config_path.resolve()
-        config = load_config(config_file)
-    else:
-        config_file, config = discover_config()
+    config_file, config = (
+        (config_path.resolve(), load_config(config_path.resolve()))
+        if config_path is not None
+        else discover_config()
+    )
 
     config_dir = config_file.parent
 
@@ -186,10 +201,11 @@ def check_cmd(
     if show_rule is not None:
         config.show_rule = show_rule
 
-    # stdin モードの判定とバリデーション（resolve_files より前に配置）
-    stdin_mode = any(str(f) == "-" for f in (files or []))
+    # stdin モードの判定とバリデーション
+    # resolve_files より前に配置し、ファイル解決前に分岐します。
+    is_stdin_mode = any(str(f) == "-" for f in (files or []))
 
-    if stdin_filename is not None and not stdin_mode:
+    if stdin_filename is not None and not is_stdin_mode:
         typer.echo(
             "Error: --stdin-filename は '-' (stdin) と併用する必要があります。",
             err=True,
@@ -205,7 +221,7 @@ def check_cmd(
     project_root = config_dir.parent
     suppression_index = _build_suppression_index(config)
 
-    if stdin_mode:
+    if is_stdin_mode:
         if len(files) > 1:  # type: ignore[arg-type]
             typer.echo(
                 "Error: '-' (stdin) は他のファイルと同時に指定できません。",
@@ -240,7 +256,7 @@ def check_cmd(
         source = LintSource(content=content)
         source_name = LintSourceName(name=fname)
 
-        skip_applies = stdin_filename is None
+        should_skip_applies = stdin_filename is None
         if stdin_filename is not None:
             try:
                 rel_file = (
@@ -268,7 +284,7 @@ def check_cmd(
             project_root,
             suppression_index,
             stdin_source=(source, source_name, filepath, rel_file),
-            skip_applies_to=skip_applies,
+            skip_applies_to=should_skip_applies,
         )
     else:
         target_paths = files if files else [Path(".")]
