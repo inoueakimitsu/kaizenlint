@@ -9,7 +9,9 @@ def _load_gitignore(directory: Path) -> pathspec.PathSpec:
     """directory 内の .gitignore を読み込んで PathSpec を返します。"""
     gitignore = directory / ".gitignore"
     if gitignore.is_file():
-        return pathspec.PathSpec.from_lines("gitwildmatch", gitignore.read_text().splitlines())
+        return pathspec.PathSpec.from_lines(
+            "gitwildmatch", gitignore.read_text().splitlines()
+        )
     return pathspec.PathSpec.from_lines("gitwildmatch", [])
 
 
@@ -52,7 +54,11 @@ def resolve_files(
     include_spec = pathspec.PathSpec.from_lines("gitwildmatch", config.include)
     all_excludes = config.exclude + config.extend_exclude
     exclude_spec = pathspec.PathSpec.from_lines("gitwildmatch", all_excludes)
-    gitignore_spec = _load_gitignore(project_root) if config.respect_gitignore else pathspec.PathSpec.from_lines("gitwildmatch", [])
+    gitignore_spec = (
+        _load_gitignore(project_root)
+        if config.respect_gitignore
+        else pathspec.PathSpec.from_lines("gitwildmatch", [])
+    )
 
     resolved: list[Path] = []
 
@@ -60,7 +66,11 @@ def resolve_files(
         target = target.resolve()
         if target.is_file():
             if config.force_exclude and _is_excluded(
-                target, project_root, exclude_spec, gitignore_spec, config.respect_gitignore
+                target,
+                project_root,
+                exclude_spec,
+                gitignore_spec,
+                config.respect_gitignore,
             ):
                 continue
             resolved.append(target)
@@ -69,7 +79,11 @@ def resolve_files(
                 if not child.is_file():
                     continue
                 if _is_excluded(
-                    child, project_root, exclude_spec, gitignore_spec, config.respect_gitignore
+                    child,
+                    project_root,
+                    exclude_spec,
+                    gitignore_spec,
+                    config.respect_gitignore,
                 ):
                     continue
                 try:

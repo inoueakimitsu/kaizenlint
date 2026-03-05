@@ -1,6 +1,6 @@
 import fnmatch
 from pathlib import Path
-from typing import Annotated, Literal, Self
+from typing import Annotated, Literal, Self, cast
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -44,7 +44,7 @@ class LintRule(BaseModel):
                 raise ValueError(
                     f"applies_to の要素はすべて文字列で指定してください (got {v!r})"
                 )
-            return v
+            return cast(list[str], v)
         raise ValueError(
             f"applies_to はリストまたは文字列で指定してください (got {type(v).__name__})"
         )
@@ -120,7 +120,11 @@ class KaizenlintConfig(BaseModel):
     include: list[str] = Field(default_factory=lambda: ["*.py", "*.md", "*.txt"])
     exclude: list[str] = Field(
         default_factory=lambda: [
-            ".git", ".venv", "__pycache__", "node_modules", ".kaizenlint"
+            ".git",
+            ".venv",
+            "__pycache__",
+            "node_modules",
+            ".kaizenlint",
         ]
     )
     extend_exclude: list[str] = Field(default_factory=list, alias="extend-exclude")

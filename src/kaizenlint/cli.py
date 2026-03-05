@@ -123,7 +123,9 @@ def _callback(ctx: typer.Context) -> None:
 def check_cmd(
     files: Annotated[
         Optional[list[Path]],
-        typer.Argument(help="対象ファイル / ディレクトリです。省略時はカレント ディレクトリを使います。"),
+        typer.Argument(
+            help="対象ファイル / ディレクトリです。省略時はカレント ディレクトリを使います。"
+        ),
     ] = None,
     exclude: Annotated[
         Optional[list[str]],
@@ -143,11 +145,15 @@ def check_cmd(
     ] = None,
     show_rule: Annotated[
         Optional[bool],
-        typer.Option("--show-rule/--no-show-rule", help="違反出力にルールの説明を表示します。"),
+        typer.Option(
+            "--show-rule/--no-show-rule", help="違反出力にルールの説明を表示します。"
+        ),
     ] = None,
     stdin_filename: Annotated[
         Optional[str],
-        typer.Option("--stdin-filename", help="stdin の内容をこのファイル名として扱います。"),
+        typer.Option(
+            "--stdin-filename", help="stdin の内容をこのファイル名として扱います。"
+        ),
     ] = None,
     config_path: Annotated[
         Optional[Path],
@@ -260,16 +266,11 @@ def check_cmd(
         if stdin_filename is not None:
             try:
                 rel_file = (
-                    Path(stdin_filename)
-                    .resolve()
-                    .relative_to(project_root)
-                    .as_posix()
+                    Path(stdin_filename).resolve().relative_to(project_root).as_posix()
                 )
             except ValueError:
                 rel_file = None
-            typer.echo(
-                f"Checking <stdin> (as {fname}) with {len(rules)} rule(s)..."
-            )
+            typer.echo(f"Checking <stdin> (as {fname}) with {len(rules)} rule(s)...")
         else:
             rel_file = None
             typer.echo(f"Checking <stdin> with {len(rules)} rule(s)...")
@@ -308,9 +309,7 @@ def check_cmd(
                         err=True,
                     )
 
-        typer.echo(
-            f"Checking {len(resolved)} file(s) with {len(rules)} rule(s)..."
-        )
+        typer.echo(f"Checking {len(resolved)} file(s) with {len(rules)} rule(s)...")
 
         tasks, task_keys, used_suppressions = _build_tasks(
             resolved, rules, project_root, suppression_index
@@ -361,8 +360,7 @@ def check_cmd(
             typer.echo(f'"{file_path}" = [', err=True)
             for rule_key in rule_key_list:
                 typer.echo(
-                    f'    {{ rule = "{rule_key}",'
-                    ' messages = ["ここに理由を記載"] },',
+                    f'    {{ rule = "{rule_key}", messages = ["ここに理由を記載"] }},',
                     err=True,
                 )
             typer.echo("]", err=True)

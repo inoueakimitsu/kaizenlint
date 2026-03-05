@@ -1,9 +1,6 @@
 """stdin モードのテスト。"""
 
 from pathlib import Path
-from unittest.mock import patch
-
-import pytest
 
 from kaizenlint.cli import _build_tasks
 from kaizenlint.models import (

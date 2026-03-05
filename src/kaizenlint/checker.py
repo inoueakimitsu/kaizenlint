@@ -52,9 +52,7 @@ def _build_messages(task: CheckTask) -> list[ChatCompletionMessageParam]:
         f"## 対象テキスト\n```\n{task.source.content}\n```"
     )
     if task.supplement_messages:
-        supplement_text = "\n".join(
-            f"- {msg}" for msg in task.supplement_messages
-        )
+        supplement_text = "\n".join(f"- {msg}" for msg in task.supplement_messages)
         user_content += (
             f"\n\n## 例外事項 (プロジェクトの方針として許容されている設計判断)\n"
             f"{supplement_text}\n\n"

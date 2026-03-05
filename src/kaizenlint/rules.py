@@ -1,6 +1,6 @@
 import glob as globmod
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, cast
 
 import frontmatter
 from markdown_it import MarkdownIt
@@ -39,7 +39,7 @@ def parse_rule_file(path: Path, source_path: str = "") -> list[LintRule]:
     # frontmatter から checker 設定を取得し、本文をパースします。
     post = frontmatter.load(str(path))
     checker = _parse_checker(post.metadata)
-    applies_to: list[str] = post.metadata.get("applies_to", [])
+    applies_to = cast(list[str], post.metadata.get("applies_to", []))
     body = post.content
     lines = body.splitlines()
 
@@ -89,7 +89,9 @@ def resolve_rules(
     # 個人ルール (~/.kaizenlint/rules/**/*.md) を探索します
     home_rules = Path.home() / ".kaizenlint" / "rules"
     if home_rules.is_dir():
-        for match in sorted(globmod.glob(str(home_rules / "**" / "*.md"), recursive=True)):
+        for match in sorted(
+            globmod.glob(str(home_rules / "**" / "*.md"), recursive=True)
+        ):
             rule_files[Path(match).resolve()] = None
 
     all_rules: list[LintRule] = []
