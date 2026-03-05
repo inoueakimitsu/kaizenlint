@@ -710,3 +710,60 @@ endpoint = "openai"
         "「ルールファイル」「パーサ」等は JIS X 0301 に準拠した標準的な表記です。",
     ]},
 ]
+
+"tests/test_executor.py" = [
+    { rule = "rules/python_style.md:NumPy 形式 docstring", messages = [
+        "モジュール docstring は Parameters/Returns を持たないため NumPy 形式の完全準拠は不可能です。Notes セクションで補足しています。テスト クラスおよびテスト メソッドの docstring は引数・戻り値を持たない 1 行サマリーであり、Parameters/Returns セクションは不要です。",
+    ]},
+    { rule = "rules/python_style.md:Import Organization", messages = [
+        "このファイルには third-party ライブラリの import がありません。standard library と local/project の 2 グループのみで正しい構成です。存在しないグループのために空行を追加する必要はありません。",
+    ]},
+    { rule = "rules/japanese_comment_style/01_taigendome.md:体言止め禁止", messages = [
+        "NumPy 形式 docstring の Returns セクションでは型名のみの行が規約です。「CheckTask です。」のように変更すると NumPy 形式ルールと矛盾します。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コメントで実装の意図 (WHY) を記述する", messages = [
+        "テスト ヘルパーの docstring は「なぜこのヘルパーが必要か」を記述しており、WHAT ではなく WHY を説明しています。_mock の docstring は drain 発動条件を正確に 1 回満たすためという意図を記述しています。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:自明な情報はコメントに書かない", messages = [
+        "セクション区切りコメント (# ── ... ──) はファイル構造のナビゲーションを支援するもので、コードの動作説明ではありません。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コメント位置をコードの上に移動させる", messages = [
+        "セクション区切りコメントは既にコード ブロックの上部に配置されています。繰り返しパターンではありません。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:コメントで関数の入出力例を示す", messages = [
+        "各ヘルパー関数の docstring に Examples セクションを記載済みです。コメント行 (# 実例: ...) ではなく docstring 内の doctestとして記述しており、NumPy 形式に準拠しています。",
+    ]},
+    { rule = "rules/readable_code/03_comments.md:改善が必要なコードを文書化する", messages = [
+        "TODO コメントで asyncio scheduling 依存の課題を明記しています。現時点では実用上問題なく動作しており、より堅牢な方法は将来の改善候補です。",
+    ]},
+    { rule = "rules/japanese_comment_style/04_polite.md:丁寧語の使用", messages = [
+        "Notes セクション内の文は丁寧語で統一済みです。「検証しています」「実現しています」の形になっています。",
+    ]},
+    { rule = "rules/japanese_comment_style/06_comma_space.md:全角カンマ後のスペース禁止", messages = [
+        "全角カンマ直後に半角スペースは入れていません。「、2 番目」の 2 は数字であり半角スペースではありません。",
+    ]},
+    { rule = "rules/readable_code/04_layout.md:コードを段落に分割する", messages = [
+        "セクション区切りコメント (# ── ... ──) でファイル全体を論理グループに分割済みです。各関数は短く単一責務であり、関数内部での段落分割は不要です。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:プロジェクト固有の省略形を避ける", messages = [
+        "LlmConfig と LlmProfile は kaizenlint パッケージが公開する型名であり、テスト側でリネームすることはできません。LLM (Large Language Model) は業界標準の略語です。",
+    ]},
+    { rule = "rules/readable_code/02_naming.md:ループ イテレーターには説明的な名前をつける", messages = [
+        "for _ in range(5) の _ は Python の慣用的な使い捨て変数です。ループ本体で変数を参照しないため、説明的な名前は不要です。このルールはネストしたループでインデックスを混同しやすい場合を対象としています。",
+    ]},
+    { rule = "rules/readable_code/06_expressions.md:重複した式を変数に抽出する", messages = [
+        "2 つの方針がありえます: (A) テスト内の繰り返しリテラル ('test', 'desc' 等) をモジュール定数に抽出する、(B) リテラルのまま各ヘルパー内に保持する。(B) を採用しました。テストのダミー値は意味を持たない placeholder であり、定数化しても可読性は向上しません。むしろ定義箇所が離れることでテストの局所性が損なわれます。",
+    ]},
+    { rule = "rules/readable_code/07_variables.md:変数は一度だけ書き込む", messages = [
+        "2 つの方針がありえます: (A) for ループを展開して await asyncio.sleep(0) を 5 回明示的に書く、(B) for _ in range(5) で繰り返す。(B) を採用しました。「変数は一度だけ書き込む」ルールはループ変数の再代入を対象とするものではなく、ループ変数 _ は使用されていません。また range(5) により回数が明示されます。",
+    ]},
+    { rule = "rules/readable_code/07_variables.md:役に立たない一時変数を削除する", messages = [
+        "for _ in range(5) の _ は Python の慣用的な使い捨て変数であり、一時変数ではありません。ループの反復回数を range(5) で明示するための構文上の要素です。",
+    ]},
+    { rule = "rules/python_style.md:docstring 内の型ヒント記法", messages = [
+        "Parameters セクションの型ヒントは「変数名: 型」の形式 (コロン前スペースなし) で統一済みです。ルールの Good 例と一致しています。",
+    ]},
+    { rule = "rules/japanese_comment_style/02_teineigo.md:丁寧語の使用", messages = [
+        "セクション区切りコメントおよび docstring はすべて丁寧語 (～します、～です) で統一済みです。",
+    ]},
+]

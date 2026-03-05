@@ -159,6 +159,14 @@ def check_cmd(
         Optional[Path],
         typer.Option("--config", help="config ファイル パスを指定します。"),
     ] = None,
+    max_fail: Annotated[
+        Optional[int],
+        typer.Option(
+            "--max-fail",
+            min=0,
+            help="N 件の違反を検出した時点で残りのチェックを中断します。実行中のチェックは完了を待つため、報告数は N を超えることがあります。",
+        ),
+    ] = None,
 ) -> None:
     """kaizenlint でファイルをチェックします。
 
@@ -350,7 +358,19 @@ def check_cmd(
             if tk:
                 violations_for_tips.append(tk)
 
-    executor.execute(tasks, config, on_result)
+    result = executor.execute(tasks, config, on_result, max_fail=max_fail)
+
+    if result.is_drain_activated:
+        if result.skipped > 0:
+            typer.echo(
+                f"\n--max-fail={max_fail} に達したため中断しました（{result.skipped} 件のタスクをスキップ）。",
+                err=True,
+            )
+        else:
+            typer.echo(
+                f"\n--max-fail={max_fail} に達しました（全タスクは実行済み）。",
+                err=True,
+            )
 
     if violations_for_tips:
         typer.echo("\n--- Tips ---", err=True)
