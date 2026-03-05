@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Annotated, Optional
 
@@ -40,29 +41,38 @@ def _build_tasks(
     rules: list[LintRule],
     project_root: Path,
     suppression_index: dict[tuple[str, str], SuppressionEntry],
+    *,
+    stdin_source: tuple[LintSource, LintSourceName, Path, str | None] | None = None,
+    skip_applies_to: bool = False,
 ) -> tuple[list[CheckTask], dict[int, tuple[str, str]], set[tuple[str, str]]]:
     """タスクリストを構築し、task_keys と used_suppressions を返します。
 
     resolved の各 Path に対して read_text() / LintSource / LintSourceName を内部で構築します。
+    stdin_source が指定された場合は resolved を無視し、stdin の内容だけでタスクを構築します。
     """
     tasks: list[CheckTask] = []
     task_keys: dict[int, tuple[str, str]] = {}
     used_suppressions: set[tuple[str, str]] = set()
 
-    for filepath in resolved:
-        source = LintSource(content=filepath.read_text())
-        source_name = LintSourceName(name=str(filepath))
+    if stdin_source is not None:
+        sources = [(stdin_source[0], stdin_source[1], stdin_source[2], stdin_source[3])]
+    else:
+        sources = []
+        for filepath in resolved:
+            source = LintSource(content=filepath.read_text())
+            source_name = LintSourceName(name=str(filepath))
+            try:
+                rel_file = filepath.relative_to(project_root).as_posix()
+            except ValueError:
+                rel_file = None
+            sources.append((source, source_name, filepath, rel_file))
 
-        try:
-            rel_file = filepath.relative_to(project_root).as_posix()
-        except ValueError:
-            rel_file = None
-
+    for source, source_name, filepath, rel_file in sources:
         for rule in rules:
             rule_key = f"{rule.source_path}:{rule.title}"
             lookup_key = (rel_file, rule_key) if rel_file else None
 
-            if not rule.matches_file(filepath):
+            if not skip_applies_to and not rule.matches_file(filepath):
                 if lookup_key and lookup_key in suppression_index:
                     used_suppressions.add(lookup_key)
                 continue
@@ -126,6 +136,10 @@ def check_cmd(
         Optional[bool],
         typer.Option("--show-rule/--no-show-rule", help="違反出力にルールの説明を表示します。"),
     ] = None,
+    stdin_filename: Annotated[
+        Optional[str],
+        typer.Option("--stdin-filename", help="stdin の内容をこのファイル名として扱います。"),
+    ] = None,
     config_path: Annotated[
         Optional[Path],
         typer.Option("--config", help="config ファイル パスを指定します。"),
@@ -172,12 +186,15 @@ def check_cmd(
     if show_rule is not None:
         config.show_rule = show_rule
 
-    target_paths = files if files else [Path(".")]
-    resolved = resolve_files(target_paths, config, config_dir)
+    # stdin モードの判定とバリデーション（resolve_files より前に配置）
+    stdin_mode = any(str(f) == "-" for f in (files or []))
 
-    if not resolved:
-        typer.echo("No files to check.")
-        raise typer.Exit(0)
+    if stdin_filename is not None and not stdin_mode:
+        typer.echo(
+            "Error: --stdin-filename は '-' (stdin) と併用する必要があります。",
+            err=True,
+        )
+        raise typer.Exit(2)
 
     rules = resolve_rules(config, config_dir)
 
@@ -185,32 +202,111 @@ def check_cmd(
         typer.echo("No rules found.")
         raise typer.Exit(0)
 
-    warned_patterns: set[tuple[str, str]] = set()
-    for rule in rules:
-        for pat in rule.applies_to:
-            if ("/" in pat or "**" in pat) and (rule.source_path, pat) not in warned_patterns:
-                warned_patterns.add((rule.source_path, pat))
-                typer.echo(
-                    f"Warning: applies_to パターン {pat!r} ({rule.source_path}) は"
-                    " ファイル名のみでマッチされます。パス区切りや ** は無視されます。",
-                    err=True,
-                )
-
-    typer.echo(f"Checking {len(resolved)} file(s) with {len(rules)} rule(s)...")
-
     project_root = config_dir.parent
     suppression_index = _build_suppression_index(config)
 
-    tasks, task_keys, used_suppressions = _build_tasks(
-        resolved, rules, project_root, suppression_index
-    )
-
-    # 未使用の suppression を警告します。
-    for key in suppression_index:
-        if key not in used_suppressions:
+    if stdin_mode:
+        if len(files) > 1:  # type: ignore[arg-type]
             typer.echo(
-                f"Warning: 未使用の suppression: {key[0]} × {key[1]}", err=True
+                "Error: '-' (stdin) は他のファイルと同時に指定できません。",
+                err=True,
             )
+            raise typer.Exit(2)
+
+        if sys.stdin.isatty():
+            typer.echo(
+                "Error: stdin がターミナルに接続されています。"
+                "パイプまたはリダイレクトを使用してください。",
+                err=True,
+            )
+            raise typer.Exit(2)
+
+        try:
+            content = sys.stdin.read()
+        except UnicodeDecodeError:
+            typer.echo(
+                "Error: stdin からのテキスト読み込みに失敗しました。"
+                "バイナリ入力には対応していません。",
+                err=True,
+            )
+            raise typer.Exit(2)
+
+        if not content.strip():
+            typer.echo("No content from stdin.")
+            raise typer.Exit(0)
+
+        fname = stdin_filename or "<stdin>"
+        filepath = Path(fname)
+        source = LintSource(content=content)
+        source_name = LintSourceName(name=fname)
+
+        skip_applies = stdin_filename is None
+        if stdin_filename is not None:
+            try:
+                rel_file = (
+                    Path(stdin_filename)
+                    .resolve()
+                    .relative_to(project_root)
+                    .as_posix()
+                )
+            except ValueError:
+                rel_file = None
+            typer.echo(
+                f"Checking <stdin> (as {fname}) with {len(rules)} rule(s)..."
+            )
+        else:
+            rel_file = None
+            typer.echo(f"Checking <stdin> with {len(rules)} rule(s)...")
+            typer.echo(
+                "Warning: --stdin-filename が未指定のため、全ルールを適用します。",
+                err=True,
+            )
+
+        tasks, task_keys, used_suppressions = _build_tasks(
+            [],
+            rules,
+            project_root,
+            suppression_index,
+            stdin_source=(source, source_name, filepath, rel_file),
+            skip_applies_to=skip_applies,
+        )
+    else:
+        target_paths = files if files else [Path(".")]
+        resolved = resolve_files(target_paths, config, config_dir)
+
+        if not resolved:
+            typer.echo("No files to check.")
+            raise typer.Exit(0)
+
+        warned_patterns: set[tuple[str, str]] = set()
+        for rule in rules:
+            for pat in rule.applies_to:
+                if ("/" in pat or "**" in pat) and (
+                    rule.source_path,
+                    pat,
+                ) not in warned_patterns:
+                    warned_patterns.add((rule.source_path, pat))
+                    typer.echo(
+                        f"Warning: applies_to パターン {pat!r} ({rule.source_path}) は"
+                        " ファイル名のみでマッチされます。パス区切りや ** は無視されます。",
+                        err=True,
+                    )
+
+        typer.echo(
+            f"Checking {len(resolved)} file(s) with {len(rules)} rule(s)..."
+        )
+
+        tasks, task_keys, used_suppressions = _build_tasks(
+            resolved, rules, project_root, suppression_index
+        )
+
+        # 未使用の suppression を警告します。
+        for key in suppression_index:
+            if key not in used_suppressions:
+                typer.echo(
+                    f"Warning: 未使用の suppression: {key[0]} × {key[1]}",
+                    err=True,
+                )
 
     executor = AsyncExecutor()
     violations_for_tips: list[tuple[str, str]] = []
