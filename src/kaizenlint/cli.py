@@ -325,17 +325,27 @@ def check_cmd(
 
     executor = AsyncExecutor()
     violations_for_tips: list[tuple[str, str]] = []
+    has_printed_violation = False
 
     def on_result(task: CheckTask, violation: LintViolation | None) -> None:
         """チェック結果を受け取り、違反があれば出力します。"""
-        hint_label = " (hint適用中)" if task.supplement_messages else ""
+        nonlocal has_printed_violation
+        hint_label = " (note適用中)" if task.supplement_messages else ""
         if violation is not None:
+            if has_printed_violation:
+                typer.echo()
+            has_printed_violation = True
             typer.echo(
                 f"{task.source_name.name}:  [{violation.rule.title}]{hint_label} {violation.message.text}"
             )
             if config.show_rule:
+                typer.echo("  rule:")
                 for line in violation.rule.description.splitlines():
-                    typer.echo(f"  | {line}")
+                    typer.echo(f"    {line}")
+            if task.supplement_messages:
+                typer.echo("  note:")
+                for msg in task.supplement_messages:
+                    typer.echo(f"    - {msg}")
             tk = task_keys.get(id(task))
             if tk:
                 violations_for_tips.append(tk)
