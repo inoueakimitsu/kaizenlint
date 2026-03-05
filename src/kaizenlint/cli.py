@@ -374,6 +374,10 @@ def check_cmd(
                 f"\n--max-fail={config.max_fail} に達したため中断しました（{result.skipped} 件のタスクをスキップ）。",
                 err=True,
             )
+            typer.echo(
+                "違反を修正した後、再度実行してください。",
+                err=True,
+            )
         else:
             typer.echo(
                 f"\n--max-fail={config.max_fail} に達しました（全タスクは実行済み）。",
