@@ -6,6 +6,7 @@ applies_to: ["*.py", "*.cpp", "*.cxx", "*.ts", "*.tsx", "*.js", "*.jsx", "*.java
 ## 自明な情報はコメントに書かない
 
 コードから直ちに理解できる情報をコメントに記述しません。
+ただし、コードの直訳がコメントになっているわけでなければ、追加情報が含まれているため有益とみなし、プロジェクト外の人の理解を促すためにコメントは残してください。
 
 **Bad:**
 ```cpp
@@ -14,7 +15,7 @@ class Account {
 public:
     // コンストラクタ
     Account();
-    // profit に新しい値を設定する
+    // profit に新しい利益の値を設定する。この利益は、税引き前利益である。
     void SetProfit(double profit);
 };
 ```
@@ -24,9 +25,11 @@ public:
 class Account {
 public:
     Account();
+    // profit に新しい利益の値を設定する。この利益は、税引き前利益である。
     void SetProfit(double profit);
 };
 ```
+
 
 ## ひどい名前にコメントを付けるのではなく、名前を改善する
 
